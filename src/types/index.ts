@@ -162,3 +162,4 @@ export * from "./capability";
 export * from "./eligibility";
 export * from "./scoring";
 export * from "./decision";
+export * from "./proposal";

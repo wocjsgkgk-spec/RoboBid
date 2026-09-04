@@ -75,3 +75,4 @@ export const CapabilitySchema = z.object({
   updatedAt: z.string(),
 });
 export type Capability = z.infer<typeof CapabilitySchema>;
+export type CapabilityRecord = Capability;
