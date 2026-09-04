@@ -156,3 +156,7 @@ export const AuditEventSchema = z.object({
   createdAt: z.string(),
 });
 export type AuditEvent = z.infer<typeof AuditEventSchema>;
+
+export * from "./document";
+export * from "./capability";
+export * from "./eligibility";
