@@ -150,3 +150,36 @@ export const STANDARD_PROPOSAL_TOC: ProposalTOCItem[] = [
     defaultPromptGoal: '절대 가짜 실적을 날조하지 않고, 사내 저장소에 등록된 실제 프로젝트 수행 실적만 인용합니다.',
   },
 ];
+
+export interface QualityGateIssue {
+  id: string;
+  category: 'RFP_COMPLIANCE' | 'TECHNICAL' | 'BUSINESS' | 'EVIDENCE' | 'SCHEDULE' | 'BUDGET' | 'KPI' | 'DOCUMENT';
+  severity: 'BLOCKER' | 'HIGH' | 'MEDIUM';
+  title: string;
+  description: string;
+  actionRecommendation: string;
+  actionUrl?: string;
+  sectionCode?: string;
+}
+
+export interface ProposalQualityGate {
+  proposalId: string;
+  opportunityId?: string;
+  readinessScore: number; // 0 ~ 100
+  isReady: boolean; // true only if blockerCount === 0 and readinessScore >= 80
+  blockerCount: number;
+  highIssueCount: number;
+  mediumIssueCount: number;
+  issues: QualityGateIssue[];
+  evaluationAxes: Array<{
+    axis: string;
+    label: string;
+    score: number;
+    maxScore: number;
+    weightPercent: number;
+    status: 'PASS' | 'WARN' | 'FAIL';
+    feedback: string;
+  }>;
+  evaluatedAt: string;
+}
+

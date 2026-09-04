@@ -23,7 +23,7 @@ export async function POST(
         ? (capabilities as CapabilityRecord[])
         : vaultStore.getAll();
 
-    const sections = proposalService.generateDraft(
+    const sections = await proposalService.generateDraftAsync(
       params.id,
       opportunity as Opportunity,
       caps,

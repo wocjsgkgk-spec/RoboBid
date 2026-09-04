@@ -1,3 +1,4 @@
+import https from 'https';
 import { NotificationSeverity, NotificationType } from '@/types/notification';
 
 export interface TelegramSendOptions {
@@ -25,7 +26,7 @@ export class TelegramClient {
 
   constructor(botToken?: string, chatId?: string, baseUrl = 'https://api.telegram.org') {
     this.defaultBotToken = botToken || process.env.TELEGRAM_BOT_TOKEN;
-    this.defaultChatId = chatId || process.env.TELEGRAM_CHAT_ID;
+    this.defaultChatId = chatId || process.env.TELEGRAM_DEFAULT_CHAT_ID || process.env.TELEGRAM_CHAT_ID;
     this.baseUrl = baseUrl;
   }
 
@@ -138,7 +139,15 @@ export class TelegramClient {
     };
 
     // 모바일 딥링크를 위한 Inline Keyboard 버튼 첨부
-    if (options.deepLinkUrl) {
+    // ※ 주의: Telegram Bot API 규격상 'localhost'나 '127.0.0.1' 주소를 버튼 url에 넣으면 400 Bad Request로 메시지 전송이 거부됩니다.
+    const isPublicUrl = Boolean(
+      options.deepLinkUrl &&
+      (options.deepLinkUrl.startsWith('https://') || options.deepLinkUrl.startsWith('http://')) &&
+      !options.deepLinkUrl.includes('localhost') &&
+      !options.deepLinkUrl.includes('127.0.0.1')
+    );
+
+    if (isPublicUrl && options.deepLinkUrl) {
       payload.reply_markup = {
         inline_keyboard: [
           [
@@ -149,23 +158,31 @@ export class TelegramClient {
           ],
         ],
       };
+    } else if (options.deepLinkUrl) {
+      // 로컬 개발 URL인 경우 버튼 대신 본문 하단에 텍스트 링크로 표시하여 Telegram 400 거부 방지
+      payload.text += `\n\n🔗 <b>확인 링크:</b> ${this.escapeHtml(options.deepLinkUrl)}`;
     }
 
     try {
-      const response = await fetch(`${this.baseUrl}/bot${token}/sendMessage`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
+      let data: any;
 
-      const data = await response.json();
+      if (process.env.NODE_ENV !== 'test' && typeof window === 'undefined') {
+        data = await this.postWithHttpsIPv4(`${this.baseUrl}/bot${token}/sendMessage`, payload);
+      } else {
+        const response = await fetch(`${this.baseUrl}/bot${token}/sendMessage`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        });
+        data = await response.json();
+      }
 
-      if (!response.ok || !data.ok) {
+      if (!data || !data.ok) {
         return {
           success: false,
-          error: data.description || `Telegram API responded with status ${response.status}`,
+          error: data?.description || 'Telegram API responded with error',
         };
       }
 
@@ -179,5 +196,48 @@ export class TelegramClient {
         error: err.message || 'Network error while calling Telegram API',
       };
     }
+  }
+
+  private postWithHttpsIPv4(url: string, payload: Record<string, any>): Promise<any> {
+    const postData = JSON.stringify(payload);
+    const parsedUrl = new URL(url);
+
+    return new Promise((resolve, reject) => {
+      const req = https.request(
+        {
+          hostname: parsedUrl.hostname,
+          port: parsedUrl.port || 443,
+          path: parsedUrl.pathname + parsedUrl.search,
+          method: 'POST',
+          family: 4,
+          headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(postData),
+          },
+          timeout: 10000,
+        },
+        (res: any) => {
+          let body = '';
+          res.setEncoding('utf8');
+          res.on('data', (chunk: string) => (body += chunk));
+          res.on('end', () => {
+            try {
+              const parsed = JSON.parse(body);
+              resolve(parsed);
+            } catch {
+              resolve({ ok: false, description: 'Invalid JSON response from Telegram' });
+            }
+          });
+        }
+      );
+
+      req.on('error', (err: any) => reject(err));
+      req.on('timeout', () => {
+        req.destroy();
+        reject(new Error('Telegram request timed out'));
+      });
+      req.write(postData);
+      req.end();
+    });
   }
 }

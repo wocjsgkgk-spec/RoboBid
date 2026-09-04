@@ -1,13 +1,15 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { Database, ShieldCheck, Plus, AlertTriangle, CheckCircle2, Clock, FileText, Lock } from "lucide-react";
+import React, { useEffect, useState, useCallback } from "react";
+import { Database, ShieldCheck, Plus, AlertTriangle, CheckCircle2, Clock, FileText, Lock, BarChart3, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CapabilityWithAlert } from "@/lib/vault/vault-manager";
 import { CapabilityType } from "@/types/capability";
+import { KonepsRateIntelligence } from "@/components/bidding/koneps-rate-intelligence";
+import { AgencyIntelligenceView } from "@/components/intelligence/agency-intelligence-view";
 
 const CAPABILITY_TABS: Array<{ type: string; label: string }> = [
   { type: "ALL", label: "전체 자산" },
@@ -28,6 +30,17 @@ export default function IntelligencePage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [readiness, setReadiness] = useState<any>(null);
   const [projectsCount, setProjectsCount] = useState<number>(0);
+  const [viewMode, setViewMode] = useState<"AGENCY" | "VAULT" | "PRICING">("AGENCY");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const p = new URLSearchParams(window.location.search);
+      const tab = p.get("tab") || p.get("view");
+      if (tab === "pricing" || tab === "rate") setViewMode("PRICING");
+      else if (tab === "vault") setViewMode("VAULT");
+      else if (tab === "agency") setViewMode("AGENCY");
+    }
+  }, []);
 
   // Form State
   const [newType, setNewType] = useState<CapabilityType>("COMPANY_PROFILE");
@@ -35,7 +48,7 @@ export default function IntelligencePage() {
   const [newDescription, setNewDescription] = useState("");
   const [newValidUntil, setNewValidUntil] = useState("");
 
-  const fetchCapabilities = async () => {
+  const fetchCapabilities = useCallback(async () => {
     setIsLoading(true);
     try {
       const url = selectedTab === "ALL" ? "/api/vault" : `/api/vault?type=${selectedTab}`;
@@ -61,11 +74,11 @@ export default function IntelligencePage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [selectedTab]);
 
   useEffect(() => {
     fetchCapabilities();
-  }, [selectedTab]);
+  }, [fetchCapabilities]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,33 +113,110 @@ export default function IntelligencePage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            자료·인텔리전스 (Company Capability Vault)
+            자료·인텔리전스 (BidOps Intelligence Hub)
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            특허, 인증, 수행실적, 보유기술 등 사내 핵심 역량을 안전하게 보관하고 RFP 매칭의 증빙(Evidence)으로 연결합니다.
+            사내 역량 금고(Capability Vault) 및 나라장터 15개 복수예비가격 사정율 정규분포 통계를 통합 제공합니다.
           </p>
         </div>
-        <Button size="sm" onClick={() => setShowAddModal(true)} className="gap-2">
-          <Plus className="h-4 w-4" />
-          <span>새 역량 자산 등록</span>
-        </Button>
+        {viewMode === "VAULT" && (
+          <Button size="sm" onClick={() => setShowAddModal(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            <span>새 역량 자산 등록</span>
+          </Button>
+        )}
       </div>
 
-      {/* Expiration Alert Banner */}
-      {capabilities.some((c) => c.isExpired || c.isExpiringSoon) && (
-        <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-between text-xs text-amber-900 dark:text-amber-200">
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
-            <span>
-              유효기간이 만료되었거나 30일 이내 만료 예정인 인증/자료가 존재합니다. 갱신 서류를 준비해 주세요.
-            </span>
-          </div>
-        </div>
-      )}
+      {/* Primary Mode Tabs */}
+      <div className="flex items-center gap-2 border-b border-border pb-3 flex-wrap">
+        <button
+          type="button"
+          onClick={() => setViewMode("AGENCY")}
+          className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition-all ${
+            viewMode === "AGENCY"
+              ? "bg-primary text-primary-foreground shadow-xs"
+              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+          }`}
+        >
+          <Building2 className="h-4 w-4" />
+          <span>발주기관 인텔리전스 (Agency Intelligence)</span>
+          <Badge
+            variant={viewMode === "AGENCY" ? "outline" : "secondary"}
+            className={`ml-1 text-[10px] px-1.5 py-0 ${
+              viewMode === "AGENCY" ? "border-primary-foreground/30 text-primary-foreground" : ""
+            }`}
+          >
+            NEW
+          </Badge>
+        </button>
 
-      {/* Phase 11 Readiness Gate & Post-Award Status */}
-      {readiness && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <button
+          type="button"
+          onClick={() => setViewMode("VAULT")}
+          className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition-all ${
+            viewMode === "VAULT"
+              ? "bg-primary text-primary-foreground shadow-xs"
+              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+          }`}
+        >
+          <Database className="h-4 w-4" />
+          <span>사내 역량 저장소 (Capability Vault)</span>
+          <Badge
+            variant={viewMode === "VAULT" ? "outline" : "secondary"}
+            className={`ml-1 text-[10px] px-1.5 py-0 ${
+              viewMode === "VAULT" ? "border-primary-foreground/30 text-primary-foreground" : ""
+            }`}
+          >
+            {capabilities.length}건
+          </Badge>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setViewMode("PRICING")}
+          className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition-all ${
+            viewMode === "PRICING"
+              ? "bg-primary text-primary-foreground shadow-xs"
+              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+          }`}
+        >
+          <BarChart3 className="h-4 w-4" />
+          <span>나라장터 사정율 & 낙찰분포 인텔리전스</span>
+          <Badge
+            variant="outline"
+            className={`ml-1 text-[10px] px-1.5 py-0 ${
+              viewMode === "PRICING"
+                ? "border-primary-foreground/30 text-primary-foreground"
+                : "border-primary/30 text-primary"
+            }`}
+          >
+            KONEPS 통계
+          </Badge>
+        </button>
+      </div>
+
+      {/* Sub-view Rendering */}
+      {viewMode === "AGENCY" ? (
+        <AgencyIntelligenceView />
+      ) : viewMode === "PRICING" ? (
+        <KonepsRateIntelligence />
+      ) : (
+        <>
+          {/* Expiration Alert Banner */}
+          {capabilities.some((c) => c.isExpired || c.isExpiringSoon) && (
+            <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-between text-xs text-amber-900 dark:text-amber-200">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
+                <span>
+                  유효기간이 만료되었거나 30일 이내 만료 예정인 인증/자료가 존재합니다. 갱신 서류를 준비해 주세요.
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Phase 11 Readiness Gate & Post-Award Status */}
+          {readiness && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="md:col-span-2 p-4 border rounded-xl bg-card shadow-sm space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -334,6 +424,8 @@ export default function IntelligencePage() {
           <strong className="font-semibold text-foreground">사내 기밀 RLS 통제:</strong> 등록된 모든 역량 자료는 조직(`organization_id`) 단위로 완벽히 분리되며, 권한이 없는 외부 사용자나 무료 외부 AI 모델로 전송되지 않습니다.
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 }

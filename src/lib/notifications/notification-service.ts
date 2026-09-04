@@ -113,9 +113,11 @@ export class NotificationService {
         });
       } else if (channel === 'TELEGRAM') {
         const settings = this.getSettings(payload.organizationId);
+        const botToken = settings?.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN || undefined;
+        const chatId = settings?.telegramChatId || process.env.TELEGRAM_DEFAULT_CHAT_ID || process.env.TELEGRAM_CHAT_ID || '';
         const sendRes = await this.telegramClient.sendMessage({
-          botToken: settings?.telegramBotToken || undefined,
-          chatId: settings?.telegramChatId || '',
+          botToken,
+          chatId,
           title: payload.title,
           message: payload.message,
           severity: payload.severity,
@@ -257,8 +259,11 @@ export class NotificationService {
       id: crypto.randomUUID(),
       organizationId,
       telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || null,
-      telegramChatId: process.env.TELEGRAM_CHAT_ID || null,
-      telegramEnabled: false,
+      telegramChatId: process.env.TELEGRAM_DEFAULT_CHAT_ID || process.env.TELEGRAM_CHAT_ID || null,
+      telegramEnabled: Boolean(
+        process.env.TELEGRAM_BOT_TOKEN &&
+          (process.env.TELEGRAM_DEFAULT_CHAT_ID || process.env.TELEGRAM_CHAT_ID)
+      ),
       inAppEnabled: true,
       webPushEnabled: false,
       minFitScore: 75,

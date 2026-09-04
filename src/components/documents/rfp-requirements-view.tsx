@@ -126,7 +126,7 @@ export function RfpRequirementsView({ requirements }: RfpRequirementsViewProps) 
                 {req.citationQuote && (
                   <div className="flex items-start gap-2 p-2 rounded bg-muted/40 border border-muted text-[11px] text-muted-foreground italic">
                     <Quote className="h-3 w-3 shrink-0 mt-0.5 text-primary" />
-                    <span>"{req.citationQuote}"</span>
+                    <span>&quot;{req.citationQuote}&quot;</span>
                   </div>
                 )}
               </div>

@@ -1,11 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { TrendingUp, Plus, RefreshCw, Layers } from 'lucide-react';
+import { TrendingUp, Plus, RefreshCw, Layers, Sparkles } from 'lucide-react';
 import { OutcomeRecord, OutcomeAnalyticsSummary, BiasDiagnosisReport } from '@/types/outcome';
 import { OutcomeDashboard } from '@/components/learning/outcome-dashboard';
 import { OutcomeListView } from '@/components/learning/outcome-list-view';
 import { OutcomeFormModal } from '@/components/learning/outcome-form-modal';
+import { KonepsOpeningModal } from '@/components/learning/koneps-opening-modal';
+import { KonepsOpeningResult } from '@/types/koneps-opening';
 import { EmptyState } from '@/components/ui/empty-state';
 
 export default function LearningPage() {
@@ -17,6 +19,7 @@ export default function LearningPage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingOutcome, setEditingOutcome] = useState<OutcomeRecord | null>(null);
+  const [isOpeningModalOpen, setIsOpeningModalOpen] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -58,6 +61,31 @@ export default function LearningPage() {
     setIsModalOpen(true);
   };
 
+  const handleSelectOpeningResult = (result: KonepsOpeningResult, ourBidPrice?: number) => {
+    const isWin = result.resultStatus === 'SUCCESSFUL' && ourBidPrice && result.sucsfBidAmt && Math.abs(ourBidPrice - result.sucsfBidAmt) < 1000;
+    const prefilled: any = {
+      id: `outcome-koneps-${Date.now()}`,
+      opportunityId: result.bidNtceNo,
+      opportunityTitle: result.bidNtceNm,
+      agencyName: result.announcingAgency,
+      category: 'ROBOT',
+      status: isWin ? 'AWARDED' : 'REJECTED',
+      awardAmount: result.sucsfBidAmt || result.lwstBdrBidAmt || undefined,
+      competitorCount: result.totPrtcptBsnmCnt,
+      evaluationFeedback: `나라장터 개찰결과: 1순위 낙찰사 [${result.sucsfBdrBsnmNm || result.lwstBdrBsnmNm || '미정'}], 투찰률: ${result.sucsfBidRate || result.lwstBdrBidRate || '-'}%`,
+      internalPostmortem: ourBidPrice
+        ? `자사 투찰가: ${ourBidPrice.toLocaleString()}원 vs 1순위 투찰가: ${(result.sucsfBidAmt || 0).toLocaleString()}원 (오차: ${((ourBidPrice - (result.sucsfBidAmt || 0))).toLocaleString()}원)`
+        : '나라장터 개찰결과 데이터 연동',
+      successReasons: isWin ? ['투찰 하한선 및 A값 사상률 정밀 적중'] : [],
+      failureReasons: !isWin ? ['투찰가 편차 발생 (예가 사상률 오차)'] : [],
+      capabilityGaps: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    setEditingOutcome(prefilled);
+    setIsModalOpen(true);
+  };
+
   return (
     <div className="space-y-6">
       {/* 헤더 */}
@@ -72,7 +100,14 @@ export default function LearningPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => setIsOpeningModalOpen(true)}
+            className="px-3.5 py-2 border border-primary/30 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg font-medium flex items-center gap-1.5 text-sm shadow-sm transition-all"
+          >
+            <Sparkles className="w-4 h-4 text-primary" />
+            <span>나라장터 개찰결과 조회</span>
+          </button>
           <button
             onClick={fetchData}
             disabled={loading}
@@ -143,6 +178,12 @@ export default function LearningPage() {
         onClose={() => setIsModalOpen(false)}
         outcome={editingOutcome}
         onSuccess={fetchData}
+      />
+
+      <KonepsOpeningModal
+        open={isOpeningModalOpen}
+        onOpenChange={setIsOpeningModalOpen}
+        onSelectResult={handleSelectOpeningResult}
       />
     </div>
   );

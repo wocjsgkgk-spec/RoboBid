@@ -42,6 +42,91 @@ export class OutcomeService {
 
   constructor(analytics?: OutcomeAnalytics) {
     this.analyticsEngine = analytics || outcomeAnalytics;
+    this.seedDefault();
+  }
+
+  public seedDefault(): void {
+    const seedRecords: OutcomeRecord[] = [
+      {
+        id: 'out-seed-001',
+        organizationId: 'b0000000-0000-0000-0000-000000000001',
+        opportunityId: 'a0000000-0000-0000-0000-000000000001',
+        status: 'AWARDED',
+        evaluationScore: 94.5,
+        evaluationFeedback: 'TRL 7 기반의 실증 데이터가 우수하며, 국가계약법 A값 공제 산식을 정확히 준수한 투찰가가 최우수 평가됨.',
+        awardAmount: 835000000,
+        competitorCount: 4,
+        internalPostmortem: 'A값 분리 투찰로 하한선 탈락 방지 및 기술점수 1위 달성',
+        successReasons: ['TRL 실증 신뢰도', '사정율 정밀 투찰', '특허 증빙 매핑'],
+        failureReasons: [],
+        capabilityGaps: [],
+        preparationDays: 14,
+        submittedAt: new Date(Date.now() - 40 * 86400000).toISOString(),
+        decidedAt: new Date(Date.now() - 15 * 86400000).toISOString(),
+        createdAt: new Date(Date.now() - 40 * 86400000).toISOString(),
+        updatedAt: new Date(Date.now() - 15 * 86400000).toISOString(),
+        opportunityTitle: '항만 물류 무인 자율주행 AGV 로봇 4대 구매 및 통합 관제 시스템 구축',
+        agencyName: '부산항만공사 / 조달청',
+        category: 'ROBOT',
+        opportunityBudget: 850000000,
+        opportunityScore: 92,
+        decision: 'GO',
+      },
+      {
+        id: 'out-seed-002',
+        organizationId: 'b0000000-0000-0000-0000-000000000001',
+        opportunityId: 'a0000000-0000-0000-0000-000000000002',
+        status: 'AWARDED',
+        evaluationScore: 91.2,
+        evaluationFeedback: '이노비즈 가점 및 협동로봇 충돌회피 알고리즘 특허 연계로 정량/정성 평가 우수.',
+        awardAmount: 410000000,
+        competitorCount: 3,
+        internalPostmortem: 'R&D 타당성 및 사내 인력 석박사 역량 증빙이 주효함',
+        successReasons: ['이노비즈 가점', '원천특허 보유', '연구인력 우수성'],
+        failureReasons: [],
+        capabilityGaps: [],
+        preparationDays: 10,
+        submittedAt: new Date(Date.now() - 60 * 86400000).toISOString(),
+        decidedAt: new Date(Date.now() - 30 * 86400000).toISOString(),
+        createdAt: new Date(Date.now() - 60 * 86400000).toISOString(),
+        updatedAt: new Date(Date.now() - 30 * 86400000).toISOString(),
+        opportunityTitle: '2026년도 제조공정 고도화를 위한 AI 협동로봇 안전제어 및 충돌회피 솔루션 개발',
+        agencyName: '중소기업기술정보진흥원 (TIPA)',
+        category: 'ROBOT',
+        opportunityBudget: 420000000,
+        opportunityScore: 89,
+        decision: 'GO',
+      },
+      {
+        id: 'out-seed-003',
+        organizationId: 'b0000000-0000-0000-0000-000000000001',
+        opportunityId: 'a0000000-0000-0000-0000-000000000003',
+        status: 'REJECTED',
+        evaluationScore: 78.0,
+        evaluationFeedback: '유사 규모 단일 10억원 이상 납품 실적 배점에서 감점 발생.',
+        awardAmount: 0,
+        competitorCount: 6,
+        internalPostmortem: '단독 입찰 한계 노출. 향후 대형 사업은 공동수급체(컨소시엄 70:30) 구성 필수',
+        successReasons: [],
+        failureReasons: ['유사 실적 규모 부족', '단독 입찰 감점'],
+        capabilityGaps: ['10억원 이상 단일 납품 레퍼런스'],
+        preparationDays: 8,
+        submittedAt: new Date(Date.now() - 80 * 86400000).toISOString(),
+        decidedAt: new Date(Date.now() - 50 * 86400000).toISOString(),
+        createdAt: new Date(Date.now() - 80 * 86400000).toISOString(),
+        updatedAt: new Date(Date.now() - 50 * 86400000).toISOString(),
+        opportunityTitle: '스마트 물류창고 대규모 군집 로봇 제어 시스템 구축',
+        agencyName: '정보통신산업진흥원 (NIPA)',
+        category: 'AI',
+        opportunityBudget: 280000000,
+        opportunityScore: 75,
+        decision: 'GO',
+      },
+    ];
+
+    for (const rec of seedRecords) {
+      this.memoryOutcomes.set(rec.id, rec);
+    }
   }
 
   /**
@@ -192,7 +277,11 @@ export class OutcomeService {
   ): OutcomeRecord[] {
     const results: OutcomeRecord[] = [];
     for (const item of this.memoryOutcomes.values()) {
-      if (item.organizationId !== organizationId) continue;
+      const matchesOrg =
+        item.organizationId === organizationId ||
+        ((organizationId === 'org-robobid-default' || !organizationId) &&
+          item.organizationId === 'b0000000-0000-0000-0000-000000000001');
+      if (!matchesOrg) continue;
       if (filters?.status && item.status !== filters.status) continue;
       if (filters?.category && item.category !== filters.category) continue;
       if (filters?.agencyName && item.agencyName !== filters.agencyName) continue;

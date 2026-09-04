@@ -1,4 +1,4 @@
-import { ProviderRegistry } from "../providers";
+import { ProviderRegistry, NormalizedOpportunityPayload } from "../providers";
 import { Deduplicator, ExistingOpportunitySummary } from "./deduplicator";
 import { ProviderStatus } from "@/types";
 
@@ -12,6 +12,7 @@ export interface SyncRunResult {
   failed: number;
   durationMs: number;
   errorMessage?: string;
+  items?: NormalizedOpportunityPayload[];
 }
 
 export class IngestionSyncEngine {
@@ -29,7 +30,7 @@ export class IngestionSyncEngine {
   async syncProvider(
     providerId: string,
     existingOpportunities: ExistingOpportunitySummary[] = [],
-    options?: { keyword?: string; pageNo?: number; numOfRows?: number }
+    options?: { keyword?: string; pageNo?: number; numOfRows?: number; fallbackToMock?: boolean }
   ): Promise<SyncRunResult> {
     const startTime = Date.now();
     const adapter = this.registry.get(providerId);
@@ -45,12 +46,13 @@ export class IngestionSyncEngine {
         failed: 0,
         durationMs: Date.now() - startTime,
         errorMessage: `등록되지 않은 Provider ID: ${providerId}`,
+        items: [],
       };
     }
 
     // 1. Health check first
     const health = await adapter.checkHealth();
-    if (health.status === "KEY_MISSING" || health.status === "FAILED") {
+    if ((health.status === "KEY_MISSING" || health.status === "FAILED") && !options?.fallbackToMock) {
       return {
         providerId,
         status: health.status,
@@ -61,6 +63,7 @@ export class IngestionSyncEngine {
         failed: 0,
         durationMs: Date.now() - startTime,
         errorMessage: health.message,
+        items: [],
       };
     }
 
@@ -75,6 +78,7 @@ export class IngestionSyncEngine {
         failed: 0,
         durationMs: Date.now() - startTime,
         errorMessage: health.message,
+        items: [],
       };
     }
 
@@ -87,6 +91,7 @@ export class IngestionSyncEngine {
       let updated = 0;
       let deduplicated = 0;
       let failed = 0;
+      const normalizedList: NormalizedOpportunityPayload[] = [];
 
       // Track existing state for idempotency in this batch
       const currentList = [...existingOpportunities];
@@ -95,6 +100,7 @@ export class IngestionSyncEngine {
         try {
           // 3. Normalize
           const normalized = adapter.normalize(item);
+          normalizedList.push(normalized);
 
           // 4. Deduplicate & Amendment Check
           const evalResult = Deduplicator.evaluate(normalized, providerId, currentList);
@@ -138,6 +144,7 @@ export class IngestionSyncEngine {
         deduplicated,
         failed,
         durationMs: Date.now() - startTime,
+        items: normalizedList,
       };
     } catch (err: any) {
       return {
@@ -150,6 +157,7 @@ export class IngestionSyncEngine {
         failed: 0,
         durationMs: Date.now() - startTime,
         errorMessage: err.message,
+        items: [],
       };
     }
   }

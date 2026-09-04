@@ -29,6 +29,9 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "@/components/ui/sonner-toast";
 import { CapabilityType } from "@/types/capability";
+import { CapabilityGapAnalysis } from "@/components/vault/capability-gap-analysis";
+import { PartnerPoolManager } from "@/components/consortium/partner-pool-manager";
+import { ShieldAlert, Users } from "lucide-react";
 
 interface CapabilityItem {
   id: string;
@@ -61,6 +64,7 @@ export default function CapabilityVaultPage() {
   const [selectedFilter, setSelectedFilter] = useState("ALL");
   const [isLoading, setIsLoading] = useState(true);
   const [isSeeding, setIsSeeding] = useState(false);
+  const [vaultViewMode, setVaultViewMode] = useState<"ASSETS" | "GAP_ANALYSIS" | "PARTNERS">("ASSETS");
 
   // Radix Dialog modal state
   const [showAddModal, setShowAddModal] = useState(false);
@@ -200,15 +204,58 @@ export default function CapabilityVaultPage() {
         </div>
       </div>
 
-      {/* KPI Cards (Tremor Style MetricCards) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <MetricCard
-          title="보유 역량 자산 총계"
-          value={`${totalCount}건`}
-          subtitle="특허, 인증, 기술, 실적, 재무 전 영역"
-          icon={Layers}
-          badgeText="ALL ASSETS"
-        />
+      {/* Primary Mode Tabs (P1-6 & P1-8) */}
+      <div className="flex items-center gap-2 border-b border-border pb-3 flex-wrap">
+        <Button
+          variant={vaultViewMode === "ASSETS" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setVaultViewMode("ASSETS")}
+          className="text-xs gap-1.5 h-8"
+        >
+          <Layers className="h-4 w-4" />
+          <span>사내 역량 자산 (Assets)</span>
+          <Badge variant={vaultViewMode === "ASSETS" ? "outline" : "secondary"} className="ml-1 text-[10px]">
+            {totalCount}건
+          </Badge>
+        </Button>
+        <Button
+          variant={vaultViewMode === "GAP_ANALYSIS" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setVaultViewMode("GAP_ANALYSIS")}
+          className="text-xs gap-1.5 h-8 font-semibold text-rose-600 dark:text-rose-400"
+        >
+          <ShieldAlert className="h-4 w-4 text-rose-600" />
+          <span>역량 갭 분석 (Gap Analysis)</span>
+          <Badge className="bg-rose-600 text-white text-[9px] ml-1">
+            결격 진단
+          </Badge>
+        </Button>
+        <Button
+          variant={vaultViewMode === "PARTNERS" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setVaultViewMode("PARTNERS")}
+          className="text-xs gap-1.5 h-8"
+        >
+          <Users className="h-4 w-4" />
+          <span>컨소시엄 협력사 풀 (Partner Pool)</span>
+        </Button>
+      </div>
+
+      {vaultViewMode === "GAP_ANALYSIS" ? (
+        <CapabilityGapAnalysis onOpenPartnerPool={() => setVaultViewMode("PARTNERS")} />
+      ) : vaultViewMode === "PARTNERS" ? (
+        <PartnerPoolManager />
+      ) : (
+        <>
+          {/* KPI Cards (Tremor Style MetricCards) */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <MetricCard
+              title="보유 역량 자산 총계"
+              value={`${totalCount}건`}
+              subtitle="특허, 인증, 기술, 실적, 재무 전 영역"
+              icon={Layers}
+              badgeText="ALL ASSETS"
+            />
         <MetricCard
           title="공식 검증 (Verified) 자산"
           value={`${verifiedCount}건`}
@@ -346,6 +393,8 @@ export default function CapabilityVaultPage() {
           </div>
         )}
       </div>
+      </>
+      )}
 
       {/* Radix Dialog Component for Add Modal */}
       <Dialog open={showAddModal} onOpenChange={setShowAddModal}>

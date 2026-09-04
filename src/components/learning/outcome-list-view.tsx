@@ -166,7 +166,7 @@ export const OutcomeListView: React.FC<OutcomeListViewProps> = ({
             {outcomes.length === 0 && (
               <tr>
                 <td colSpan={8} className="py-8 text-center text-muted-foreground">
-                  등록된 지원 결과 데이터가 없습니다. 상단의 '지원 결과 등록' 버튼으로 추가해 주세요.
+                  등록된 지원 결과 데이터가 없습니다. 상단의 &apos;지원 결과 등록&apos; 버튼으로 추가해 주세요.
                 </td>
               </tr>
             )}

@@ -17,12 +17,17 @@ import { CrossReviewResult, SpecialistRole } from '@/types/project';
 
 interface CrossReviewPanelProps {
   proposalId: string;
+  onApplyRecommendation?: (role: SpecialistRole, recommendation: string) => void;
 }
 
-export const CrossReviewPanel: React.FC<CrossReviewPanelProps> = ({ proposalId }) => {
+export const CrossReviewPanel: React.FC<CrossReviewPanelProps> = ({
+  proposalId,
+  onApplyRecommendation,
+}) => {
   const [reviewResult, setReviewResult] = useState<CrossReviewResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [appliedKey, setAppliedKey] = useState<string | null>(null);
 
   const handleRunReview = async () => {
     setLoading(true);
@@ -126,7 +131,7 @@ export const CrossReviewPanel: React.FC<CrossReviewPanelProps> = ({ proposalId }
           <Users2 className="w-10 h-10 mx-auto mb-3 opacity-40 text-primary" />
           <h4 className="font-semibold text-sm text-foreground">교차 검토 결과가 없습니다</h4>
           <p className="text-xs mt-1">
-            상단의 '전문가 교차 검토 실행' 버튼을 눌러 4대 전문 에이전트의 종합 피드백을 확인하세요.
+            상단의 &apos;전문가 교차 검토 실행&apos; 버튼을 눌러 4대 전문 에이전트의 종합 피드백을 확인하세요.
           </p>
         </div>
       )}
@@ -205,12 +210,31 @@ export const CrossReviewPanel: React.FC<CrossReviewPanelProps> = ({ proposalId }
                     <div className="font-semibold text-[11px] text-amber-700 dark:text-amber-300">
                       [개선 권고사항]
                     </div>
-                    {finding.recommendations.map((r, i) => (
-                      <div key={i} className="flex items-start gap-1.5">
-                        <span>→</span>
-                        <span>{r}</span>
-                      </div>
-                    ))}
+                    {finding.recommendations.map((r, i) => {
+                      const itemKey = `${finding.role}-${i}`;
+                      const isApplied = appliedKey === itemKey;
+                      return (
+                        <div key={i} className="flex items-center justify-between gap-2 py-1">
+                          <div className="flex items-start gap-1.5 flex-1">
+                            <span className="text-amber-600 dark:text-amber-400">→</span>
+                            <span className="leading-relaxed">{r}</span>
+                          </div>
+                          {onApplyRecommendation && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                onApplyRecommendation(finding.role, r);
+                                setAppliedKey(itemKey);
+                                setTimeout(() => setAppliedKey(null), 2000);
+                              }}
+                              className="shrink-0 px-2 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 text-[10px] font-semibold text-amber-900 dark:text-amber-100 transition-colors"
+                            >
+                              {isApplied ? "반영됨 ✓" : "초안에 반영"}
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>

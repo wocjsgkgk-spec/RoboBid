@@ -1,0 +1,84 @@
+/* Bear Markdown Notes — Style Reference
+   Quiet notebook on white linen
+*/
+
+:root[data-theme="bear"],
+.theme-bear {
+  /* Colors */
+  --color-bear-red: #dd4c4f;
+  --color-ink-black: #000000;
+  --color-graphite: #444444;
+  --color-ash-gray: #888888;
+  --color-stone-border: #d5d6d9;
+  --color-fog: #e6e7eb;
+  --color-mist: #f3f5f7;
+  --color-linen-white: #ffffff;
+  --color-marker-lime: #d3ffa4;
+  --color-tag-indigo: #456aa3;
+  --color-tag-forest: #2b6451;
+  --color-tag-plum: #884aa8;
+  --color-warning-amber: #fcb827;
+  --color-info-sky: #44a2e5;
+
+  /* Semantic HSL tokens */
+  --background: 0 0% 100%;             /* #ffffff Linen White canvas */
+  --foreground: 0 0% 27%;              /* #444444 Graphite text */
+
+  --card: 0 0% 100%;                   /* #ffffff Linen White cards */
+  --card-foreground: 0 0% 27%;         /* #444444 Graphite text */
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 27%;
+
+  --primary: 359 68% 58%;              /* #dd4c4f Bear Red */
+  --primary-foreground: 0 0% 100%;     /* #ffffff White text */
+
+  --secondary: 210 18% 96%;            /* #f3f5f7 Mist */
+  --secondary-foreground: 0 0% 27%;
+
+  --muted: 210 18% 96%;                /* #f3f5f7 Mist band */
+  --muted-foreground: 0 0% 53%;        /* #888888 Ash Gray */
+
+  --accent: 228 12% 91%;               /* #e6e7eb Fog */
+  --accent-foreground: 0 0% 27%;
+
+  --destructive: 359 68% 58%;          /* Bear Red */
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 225 5% 84%;                /* #d5d6d9 Stone Border hairline */
+  --input: 225 5% 84%;
+  --ring: 359 68% 58%;
+
+  --radius: 0.5rem;                    /* 8px Canonical Bear button radius */
+}
+
+.dark[data-theme="bear"],
+.dark .theme-bear {
+  --background: 240 3% 10%;            /* #19191a Dark Paper */
+  --foreground: 228 12% 91%;           /* #e6e7eb Fog */
+
+  --card: 225 6% 14%;                  /* #222326 */
+  --card-foreground: 228 12% 91%;
+
+  --popover: 225 6% 14%;
+  --popover-foreground: 228 12% 91%;
+
+  --primary: 359 68% 62%;              /* Bright Bear Red */
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 225 6% 18%;
+  --secondary-foreground: 228 12% 91%;
+
+  --muted: 225 6% 18%;
+  --muted-foreground: 0 0% 65%;
+
+  --accent: 225 6% 22%;
+  --accent-foreground: 228 12% 91%;
+
+  --destructive: 359 68% 62%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 225 6% 22%;
+  --input: 225 6% 22%;
+  --ring: 359 68% 62%;
+}

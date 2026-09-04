@@ -16,7 +16,7 @@ export async function POST(
     const sections = proposal.sections || [];
     const matrixItems = submissionService.getOrInitMatrix(params.id, [], sections);
 
-    const reviewResult = crossReviewEngine.review(proposal, sections, matrixItems);
+    const reviewResult = await crossReviewEngine.reviewAsync(proposal, sections, matrixItems);
 
     return NextResponse.json({ review: reviewResult });
   } catch (err: any) {

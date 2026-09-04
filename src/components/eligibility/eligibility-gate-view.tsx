@@ -126,7 +126,7 @@ export function EligibilityGateView({ result }: EligibilityGateViewProps) {
                   {check.rfpCitationQuote && (
                     <div className="italic text-[11px] text-primary flex items-start gap-1 mt-1">
                       <Quote className="h-3 w-3 shrink-0 mt-0.5" />
-                      <span>"{check.rfpCitationQuote}"</span>
+                      <span>&quot;{check.rfpCitationQuote}&quot;</span>
                     </div>
                   )}
                 </div>

@@ -90,7 +90,7 @@ describe('Phase 11: 4 Specialist Cross-Review Agents', () => {
     expect(result.overallScore).toBeGreaterThanOrEqual(80);
     expect(result.findings).toHaveLength(4);
 
-    const roles = result.findings.map((f) => f.role);
+    const roles = result.findings.map((f: { role: string }) => f.role);
     expect(roles).toContain('STRATEGY');
     expect(roles).toContain('FINANCIAL');
     expect(roles).toContain('TECHNICAL');
@@ -113,10 +113,10 @@ describe('Phase 11: 4 Specialist Cross-Review Agents', () => {
     ];
 
     const result = engine.review(mockProposal, mockSections, missingMatrix);
-    const compFinding = result.findings.find((f) => f.role === 'COMPLIANCE');
+    const compFinding = result.findings.find((f: { role: string }) => f.role === 'COMPLIANCE');
 
     expect(compFinding).toBeDefined();
     expect(compFinding?.score).toBeLessThan(80);
-    expect(compFinding?.recommendations.some((r) => r.includes('REQ-MANDATORY-X'))).toBe(true);
+    expect(compFinding?.recommendations.some((r: string) => r.includes('REQ-MANDATORY-X'))).toBe(true);
   });
 });

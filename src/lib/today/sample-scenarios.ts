@@ -1,0 +1,66 @@
+/**
+ * RoboBid AI — 실전 데모 시나리오 팩 (SampleScenarios)
+ * 외부 API Key가 없는 상태에서도 즉시 실습 가능한 실제 조달청/중기부/NIPA 공고 데이터 세트
+ */
+
+import { Opportunity } from "@/types";
+
+export const SAMPLE_OPPORTUNITIES: Opportunity[] = [
+  {
+    id: "a0000000-0000-0000-0000-000000000001",
+    organizationId: "b0000000-0000-0000-0000-000000000001",
+    providerId: "koneps",
+    sourceId: "20260300123-00",
+    title: "항만 물류 무인 자율주행 AGV 로봇 4대 구매 및 통합 관제 시스템 구축",
+    announcingAgency: "부산항만공사 / 조달청",
+    demandingAgency: "부산항만공사",
+    bidType: "PROCUREMENT",
+    primaryDomain: "ROBOT",
+    allocatedBudget: 850000000,
+    submissionDeadline: new Date(Date.now() + 18 * 86400000).toISOString(),
+    status: "GO",
+    postedAt: new Date(Date.now() - 3 * 86400000).toISOString(),
+    contentHash: "hash-sample-agv-01",
+    currentVersion: 1,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: "a0000000-0000-0000-0000-000000000002",
+    organizationId: "b0000000-0000-0000-0000-000000000001",
+    providerId: "bizinfo",
+    sourceId: "S3345891",
+    title: "2026년도 제조공정 고도화를 위한 AI 협동로봇 안전제어 및 충돌회피 솔루션 개발",
+    announcingAgency: "중소기업기술정보진흥원 (TIPA)",
+    demandingAgency: null,
+    bidType: "R_AND_D",
+    primaryDomain: "ROBOT",
+    allocatedBudget: 420000000,
+    submissionDeadline: new Date(Date.now() + 25 * 86400000).toISOString(),
+    status: "GO",
+    postedAt: new Date(Date.now() - 5 * 86400000).toISOString(),
+    contentHash: "hash-sample-tipa-02",
+    currentVersion: 1,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: "a0000000-0000-0000-0000-000000000003",
+    organizationId: "b0000000-0000-0000-0000-000000000001",
+    providerId: "bizinfo",
+    sourceId: "BIZ-2026-NIPA-09",
+    title: "2026 AI바우처 지원사업 — 제조 스마트팩토리 특수 비전 로봇 솔루션 공급기업 매칭",
+    announcingAgency: "정보통신산업진흥원 (NIPA)",
+    demandingAgency: null,
+    bidType: "SUBSIDY_SUPPORT",
+    primaryDomain: "AI",
+    allocatedBudget: 280000000,
+    submissionDeadline: new Date(Date.now() + 12 * 86400000).toISOString(),
+    status: "GO",
+    postedAt: new Date(Date.now() - 2 * 86400000).toISOString(),
+    contentHash: "hash-sample-nipa-03",
+    currentVersion: 1,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+];

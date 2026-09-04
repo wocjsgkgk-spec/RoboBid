@@ -3,16 +3,34 @@ import { OpportunityScore } from './scoring';
 import { DecisionRecord } from './decision';
 import { ProviderHealth } from '@/lib/providers/types';
 
+export type ActionItemType =
+  | 'GO_DECISION_REQUIRED'
+  | 'RFP_CONDITION_CHECK'
+  | 'ASSIGNEE_REQUIRED'
+  | 'EVIDENCE_MISSING'
+  | 'PROPOSAL_REVIEW_PENDING'
+  | 'COMPLIANCE_UNMET'
+  | 'SUBMISSION_DOC_MISSING'
+  | 'DEADLINE_URGENT'
+  | 'CERT_EXPIRING'
+  | 'REVIEWER_FEEDBACK'
+  | 'DECISION_REQUIRED'
+  | 'DOCUMENTS_MISSING'
+  | 'PROVIDER_DEGRADED';
+
 export interface TodayActionItem {
   id: string;
-  type: 'DECISION_REQUIRED' | 'DEADLINE_URGENT' | 'DOCUMENTS_MISSING' | 'PROVIDER_DEGRADED';
+  type: ActionItemType;
   priority: 'CRITICAL' | 'HIGH' | 'NORMAL';
   title: string;
   description: string;
   linkUrl: string;
+  ctaLabel?: string;
   dueAt?: string;
   daysRemaining?: number;
   opportunityId?: string;
+  opportunityTitle?: string;
+  category?: 'DECISION' | 'COMPLIANCE' | 'PROPOSAL' | 'SUBMISSION' | 'CERTIFICATION' | 'SYSTEM';
 }
 
 export interface TodayBidOpsSummary {

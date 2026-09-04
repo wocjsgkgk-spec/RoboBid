@@ -90,33 +90,118 @@ export class KonepsAdapter extends BaseProviderAdapter {
 
   async fetchRaw(options: FetchOptions = {}): Promise<FetchResult> {
     const key = this.getServiceKey();
-    if (!key) {
-      return { items: [], totalCount: 0, pageNo: options.pageNo || 1, numOfRows: options.numOfRows || 10 };
-    }
-
     const pageNo = options.pageNo || 1;
     const numOfRows = options.numOfRows || 20;
     const keyword = options.keyword || "로봇";
 
-    const endpoint = `http://apis.data.go.kr/1230000/PubDataOpnStdBidPblancInfo/getDataSetOpnStdBidPblancInfo?serviceKey=${this.safeEncodeServiceKey(
-      key
-    )}&pageNo=${pageNo}&numOfRows=${numOfRows}&type=json&bidNtceNm=${encodeURIComponent(keyword)}`;
-
-    const res = await fetch(endpoint);
-    if (!res.ok) {
-      throw new Error(`KONEPS API Fetch 실패 (HTTP ${res.status})`);
+    if (!key) {
+      if (options.fallbackToMock) {
+        const mockItems = this.getMockTenders(keyword);
+        return {
+          items: mockItems.slice((pageNo - 1) * numOfRows, pageNo * numOfRows),
+          totalCount: mockItems.length,
+          pageNo,
+          numOfRows,
+        };
+      }
+      return { items: [], totalCount: 0, pageNo, numOfRows };
     }
 
-    const json = await res.json();
-    const items = json?.response?.body?.items || [];
-    const totalCount = json?.response?.body?.totalCount || items.length;
+    try {
+      const endpoint = `https://apis.data.go.kr/1230000/PubDataOpnStdBidPblancInfo/getDataSetOpnStdBidPblancInfo?serviceKey=${this.safeEncodeServiceKey(
+        key
+      )}&pageNo=${pageNo}&numOfRows=${numOfRows}&type=json&bidNtceNm=${encodeURIComponent(keyword)}`;
 
-    return {
-      items: Array.isArray(items) ? items : [items],
-      totalCount,
-      pageNo,
-      numOfRows,
-    };
+      const res = await fetch(endpoint);
+      if (!res.ok) {
+        if (options.fallbackToMock) {
+          const mockItems = this.getMockTenders(keyword);
+          return { items: mockItems, totalCount: mockItems.length, pageNo, numOfRows };
+        }
+        throw new Error(`KONEPS API Fetch 실패 (HTTP ${res.status})`);
+      }
+
+      const json = await res.json().catch(() => null);
+      const bodyItems = json?.response?.body?.items;
+      let items: any[] = [];
+      if (Array.isArray(bodyItems)) {
+        items = bodyItems;
+      } else if (bodyItems?.item) {
+        items = Array.isArray(bodyItems.item) ? bodyItems.item : [bodyItems.item];
+      }
+
+      const totalCount = json?.response?.body?.totalCount || items.length;
+
+      if (items.length === 0 && options.fallbackToMock) {
+        const mockItems = this.getMockTenders(keyword);
+        return { items: mockItems, totalCount: mockItems.length, pageNo, numOfRows };
+      }
+
+      return {
+        items,
+        totalCount,
+        pageNo,
+        numOfRows,
+      };
+    } catch (err: any) {
+      if (options.fallbackToMock) {
+        const mockItems = this.getMockTenders(keyword);
+        return { items: mockItems, totalCount: mockItems.length, pageNo, numOfRows };
+      }
+      throw err;
+    }
+  }
+
+  /**
+   * 실시간 API 미연결 시 사용할 공공조달 표준 규격 샘플 데이터
+   */
+  private getMockTenders(keyword: string): any[] {
+    const list = [
+      {
+        bidNtceNo: "20260904001",
+        bidNtceOrd: "00",
+        bidNtceNm: `2026년 지능형 ${keyword} 도입 및 관제시스템 구축용역`,
+        ntceInsttNm: "조달청 (수요기관: 인천항만공사)",
+        dminsttNm: "인천항만공사",
+        asignBdgtAmt: "450000000",
+        presmptPrce: "409090909",
+        bidNtceDt: new Date().toISOString(),
+        bidClseDt: new Date(Date.now() + 14 * 86400000).toISOString(),
+        srvceDivNm: "용역",
+        bidNtceDtlUrl: "https://www.g2b.go.kr",
+        ntceSpecDocNm1: "제안요청서_과업지시서.hwp",
+        ntceSpecDocUrl1: "https://www.g2b.go.kr/spec1",
+      },
+      {
+        bidNtceNo: "20260904002",
+        bidNtceOrd: "00",
+        bidNtceNm: `공공시설물 안전점검 AI 자율주행 ${keyword} 실증 사업`,
+        ntceInsttNm: "한국철도공사",
+        dminsttNm: "철도안전연구원",
+        asignBdgtAmt: "620000000",
+        presmptPrce: "563636364",
+        bidNtceDt: new Date().toISOString(),
+        bidClseDt: new Date(Date.now() + 21 * 86400000).toISOString(),
+        srvceDivNm: "용역",
+        bidNtceDtlUrl: "https://www.g2b.go.kr",
+        ntceSpecDocNm1: "과업규격서.pdf",
+        ntceSpecDocUrl1: "https://www.g2b.go.kr/spec2",
+      },
+      {
+        bidNtceNo: "20260904003",
+        bidNtceOrd: "00",
+        bidNtceNm: `제조물류 스마트 자동화 ${keyword} 구매 및 설치`,
+        ntceInsttNm: "중소벤처기업진흥공단",
+        dminsttNm: "스마트공장사업단",
+        asignBdgtAmt: "380000000",
+        presmptPrce: "345454545",
+        bidNtceDt: new Date().toISOString(),
+        bidClseDt: new Date(Date.now() + 10 * 86400000).toISOString(),
+        srvceDivNm: "물품",
+        bidNtceDtlUrl: "https://www.g2b.go.kr",
+      },
+    ];
+    return list;
   }
 
   normalize(raw: any): NormalizedOpportunityPayload {

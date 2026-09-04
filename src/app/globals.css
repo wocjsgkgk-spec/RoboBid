@@ -97,3 +97,17 @@
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--muted-foreground) / 0.4);
 }
+
+@keyframes progress {
+  0% {
+    transform: translateX(-100%);
+    width: 30%;
+  }
+  50% {
+    width: 70%;
+  }
+  100% {
+    transform: translateX(350%);
+    width: 40%;
+  }
+}

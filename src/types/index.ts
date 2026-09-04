@@ -23,17 +23,37 @@ export const ProviderStatusSchema = z.enum([
 ]);
 export type ProviderStatus = z.infer<typeof ProviderStatusSchema>;
 
+export const DataSourceSchema = z.enum([
+  "DEMO",
+  "USER",
+  "USER_INPUT",
+  "IMPORTED",
+  "API",
+  "SYSTEM",
+]);
+export type DataSource = z.infer<typeof DataSourceSchema>;
+
 export const OpportunityStatusSchema = z.enum([
-  "DISCOVERED",
-  "TRIAGED",
-  "REVIEW",
+  // 14대 업무 수명주기
+  "INBOX",
+  "NEW",
+  "REVIEWING",
+  "CONDITION_CHECK",
   "GO",
   "HOLD",
   "NO_GO",
-  "PROPOSAL",
+  "PROPOSAL_PREP",
+  "PROPOSAL_IN_PROGRESS",
+  "SUBMISSION_READY",
   "SUBMITTED",
   "AWARDED",
   "REJECTED",
+  "CLOSED",
+  // 호환용 레거시 별칭
+  "DISCOVERED",
+  "TRIAGED",
+  "REVIEW",
+  "PROPOSAL",
   "WITHDRAWN",
 ]);
 export type OpportunityStatus = z.infer<typeof OpportunityStatusSchema>;
@@ -63,6 +83,8 @@ export const OrganizationSchema = z.object({
   updatedAt: z.string(),
 });
 export type Organization = z.infer<typeof OrganizationSchema>;
+
+export const DEFAULT_ORGANIZATION_ID = "b0000000-0000-0000-0000-000000000001";
 
 export const UserProfileSchema = z.object({
   id: z.string().uuid(),
@@ -135,6 +157,8 @@ export const OpportunitySchema = z.object({
   submissionDeadline: z.string(),
   canonicalUrl: z.string().optional().nullable(),
   status: OpportunityStatusSchema,
+  dataSource: DataSourceSchema.default("DEMO").optional(),
+  decisionHistory: z.array(z.any()).optional(),
   contentHash: z.string(),
   currentVersion: z.number().int().positive().default(1),
   attachments: z.array(AttachmentSchema).optional(),
@@ -166,3 +190,6 @@ export * from "./proposal";
 export * from "./compliance";
 export * from "./outcome";
 export * from "./project";
+export * from "./pipeline";
+export * from "./task";
+export * from "./evidence";

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   Bell,
   Send,
@@ -16,6 +16,7 @@ import {
   Sparkles,
   CalendarCheck,
   FileWarning,
+  Sliders,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { NotificationRecord, NotificationSettings } from "@/types/notification";
+import { NotificationPreferenceModal } from "@/components/notifications/notification-preference-modal";
 
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<NotificationRecord[]>([]);
@@ -31,6 +33,7 @@ export default function NotificationsPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"FEED" | "SETTINGS">("FEED");
   const [filterUnread, setFilterUnread] = useState(false);
+  const [prefModalOpen, setPrefModalOpen] = useState(false);
 
   // Telegram Test State
   const [testBotToken, setTestBotToken] = useState("");
@@ -43,7 +46,7 @@ export default function NotificationsPage() {
     dryRun?: boolean;
   } | null>(null);
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     try {
       setLoading(true);
       const res = await fetch(`/api/notifications?unreadOnly=${filterUnread}`);
@@ -61,11 +64,11 @@ export default function NotificationsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterUnread]);
 
   useEffect(() => {
     fetchNotifications();
-  }, [filterUnread]);
+  }, [fetchNotifications]);
 
   const handleMarkAsRead = async (notificationId: string) => {
     try {
@@ -193,6 +196,15 @@ export default function NotificationsPage() {
           >
             <Settings className="h-3.5 w-3.5" />
             <span>Telegram 연동 설정</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPrefModalOpen(true)}
+            className="gap-1.5 border-primary/40 text-primary hover:bg-primary/10"
+          >
+            <Sliders className="h-3.5 w-3.5" />
+            <span>알림 상세 정책 (P1)</span>
           </Button>
         </div>
       </div>
@@ -402,6 +414,12 @@ export default function NotificationsPage() {
           </Card>
         </div>
       )}
+
+      {/* P1 Notification Preference Modal */}
+      <NotificationPreferenceModal
+        open={prefModalOpen}
+        onOpenChange={setPrefModalOpen}
+      />
     </div>
   );
 }

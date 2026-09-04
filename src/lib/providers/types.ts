@@ -45,6 +45,7 @@ export interface FetchOptions {
   startDate?: string;
   endDate?: string;
   keyword?: string;
+  fallbackToMock?: boolean;
 }
 
 export interface FetchResult {

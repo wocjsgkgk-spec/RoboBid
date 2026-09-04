@@ -1,0 +1,77 @@
+/* Dropbox.com Style Reference Theme Preset
+   Warm cream workspace — editorial confidence on paper
+*/
+
+:root[data-theme="dropbox"],
+.theme-dropbox {
+  /* Colors */
+  --color-dropbox-blue: #0061fe;
+  --color-cream-paper: #f7f5f2;
+  --color-pure-white: #ffffff;
+  --color-warm-ink: #1e1919;
+  --color-stone-gray: #716b61;
+  --color-sand-card: #eee9e2;
+  --color-magenta-accent: #cd2f7b;
+
+  /* Semantic HSL tokens */
+  --background: 36 24% 96%;           /* #f7f5f2 Cream Paper */
+  --foreground: 0 9% 11%;             /* #1e1919 Warm Ink */
+
+  --card: 0 0% 100%;                  /* #ffffff Pure White elevated surface */
+  --card-foreground: 0 9% 11%;        /* #1e1919 Warm Ink */
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 9% 11%;
+
+  --primary: 217 100% 49.8%;          /* #0061fe Confident Dropbox Electric Blue */
+  --primary-foreground: 0 0% 100%;    /* #ffffff Pure White text on primary */
+
+  --secondary: 35 26% 91%;            /* #eee9e2 Sand Card */
+  --secondary-foreground: 0 9% 11%;
+
+  --muted: 36 18% 93%;
+  --muted-foreground: 38 8% 41%;      /* #716b61 Stone Gray */
+
+  --accent: 35 26% 91%;               /* #eee9e2 Sand Card */
+  --accent-foreground: 0 9% 11%;
+
+  --destructive: 345 75% 50%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 35 26% 91%;               /* #eee9e2 Sand Card hairline border */
+  --input: 35 26% 87%;
+  --ring: 217 100% 49.8%;
+
+  --radius: 1rem;                     /* 16px Canonical Dropbox button radius */
+}
+
+.dark[data-theme="dropbox"],
+.dark .theme-dropbox {
+  --background: 0 9% 9%;              /* Warm Dark Ink #181515 */
+  --foreground: 36 24% 96%;            /* #f7f5f2 Cream Paper */
+
+  --card: 0 8% 13%;                   /* #241f1f Warm Card */
+  --card-foreground: 36 24% 96%;
+
+  --popover: 0 8% 13%;
+  --popover-foreground: 36 24% 96%;
+
+  --primary: 217 100% 55%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 0 8% 18%;
+  --secondary-foreground: 36 24% 96%;
+
+  --muted: 0 8% 18%;
+  --muted-foreground: 38 8% 65%;
+
+  --accent: 0 8% 18%;
+  --accent-foreground: 36 24% 96%;
+
+  --destructive: 345 70% 45%;
+  --destructive-foreground: 36 24% 96%;
+
+  --border: 0 8% 20%;
+  --input: 0 8% 20%;
+  --ring: 217 100% 55%;
+}

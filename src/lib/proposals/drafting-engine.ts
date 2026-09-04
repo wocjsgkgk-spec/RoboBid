@@ -1,6 +1,7 @@
 import { CapabilityRecord, Opportunity, RequirementCandidate } from '@/types';
 import { EvidenceCitation, ProposalTOCItem, STANDARD_PROPOSAL_TOC } from '@/types/proposal';
 import { HybridRetriever } from '@/lib/rag/hybrid-retriever';
+import { LLMClient } from '@/lib/ai/llm-client';
 
 export interface DraftSectionOptions {
   opportunity: Opportunity;
@@ -286,6 +287,80 @@ export class ProposalDraftingEngine {
         requirements,
       })
     );
+  }
+
+  /**
+   * LLM 기반 섹션별 제안서 초안 비동기 생성 (LLM 키 연결 시 고품질 자동작성)
+   */
+  public async generateSectionDraftAsync(options: DraftSectionOptions): Promise<DraftSectionResult> {
+    const baseResult = this.generateSectionDraft(options);
+    const llmClient = LLMClient.getInstance();
+
+    if (llmClient.getActiveProvider() === 'mock') {
+      return baseResult;
+    }
+
+    try {
+      const { opportunity, tocItem } = options;
+      const prompt = `당신은 대한민국 정부 공공조달 및 R&D 사업계획서/제안서 수석 작성 전문가입니다.
+다음 공고 정보와 사전 검색된 사내 역량(Evidence) 증빙을 바탕으로, 제안서의 [${tocItem.title}] 섹션을 격식 있는 공공조달 제안서 문체(개조식 및 서술식 혼용, Markdown 포맷)로 작성하십시오.
+
+[공모명]: ${opportunity.title}
+[발주/공모기관]: ${opportunity.announcingAgency}
+[섹션 코드]: ${tocItem.sectionCode}
+[섹션 목표/설명]: ${tocItem.description}
+
+[필수 준수 규칙]:
+1. 사전 검색된 사내 역량 및 요구사항 증빙(Evidence)만을 기반으로 작성하며, 거짓된 실적이나 미확인 데이터를 절대 날조하지 마십시오 (Zero Hallucination).
+2. 불확실한 수치나 일정은 [가정: ...] 또는 [TODO: ...] 형식으로 명시하십시오.
+3. 한국 정부 R&D/공공조달 표준 목차 및 양식 규정을 엄격히 준수하십시오.
+
+[기본 초안 및 증빙 참조]:
+${baseResult.contentMarkdown}
+
+위 기본 초안과 증빙 내용을 바탕으로 더 완성도 높고 전문적인 최종 섹션 본문(Markdown)을 작성하여 출력하십시오.`;
+
+      const response = await llmClient.generate({
+        messages: [
+          { role: 'system', content: '대한민국 조달청/중기부/산자부 과제 제안서 수석 전문 작성 AI입니다. Zero Hallucination 원칙을 준수합니다.' },
+          { role: 'user', content: prompt },
+        ],
+        temperature: 0.3,
+        maxTokens: 2000,
+      });
+
+      if (response.text && response.text.trim().length > 50) {
+        return {
+          ...baseResult,
+          contentMarkdown: response.text.trim(),
+        };
+      }
+    } catch (err: any) {
+      console.warn('[ProposalDraftingEngine] LLM drafting failed, using heuristic draft:', err.message);
+    }
+
+    return baseResult;
+  }
+
+  /**
+   * LLM 기반 전체 제안서 초안 7대 섹션 일괄 비동기 생성
+   */
+  public async generateFullProposalDraftAsync(
+    opportunity: Opportunity,
+    capabilities: CapabilityRecord[],
+    requirements: RequirementCandidate[]
+  ): Promise<DraftSectionResult[]> {
+    const results: DraftSectionResult[] = [];
+    for (const tocItem of STANDARD_PROPOSAL_TOC) {
+      const res = await this.generateSectionDraftAsync({
+        opportunity,
+        tocItem,
+        capabilities,
+        requirements,
+      });
+      results.push(res);
+    }
+    return results;
   }
 }
 

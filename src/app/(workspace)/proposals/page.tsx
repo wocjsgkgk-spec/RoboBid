@@ -19,6 +19,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Proposal, SectionStatus } from "@/types/proposal";
 import { ProposalWorkspaceView } from "@/components/proposal/proposal-workspace-view";
 import { Opportunity } from "@/types";
+import { SAMPLE_OPPORTUNITIES } from "@/lib/today/sample-scenarios";
 
 export default function ProposalsPage() {
   const [proposals, setProposals] = useState<Proposal[]>([]);
@@ -95,6 +96,27 @@ export default function ProposalsPage() {
     }
   };
 
+  const handleCreateFromSample = async (index: number = 0) => {
+    const opp = SAMPLE_OPPORTUNITIES[index] || SAMPLE_OPPORTUNITIES[0];
+    setCreating(true);
+    try {
+      const res = await fetch("/api/proposals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ opportunity: opp }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setProposals((prev) => [data.proposal, ...prev]);
+        setSelectedProposal(data.proposal);
+      }
+    } catch (err) {
+      console.error("Failed to create proposal from sample:", err);
+    } finally {
+      setCreating(false);
+    }
+  };
+
   const handleSaveSection = async (
     sectionCode: string,
     content: string,
@@ -145,13 +167,25 @@ export default function ProposalsPage() {
         updatedAt: new Date().toISOString(),
       };
 
+      // 사내 역량 자산(Vault) 실시간 로드하여 RAG 프롬프트에 주입
+      let vaultCaps: any[] = [];
+      try {
+        const vRes = await fetch("/api/vault");
+        if (vRes.ok) {
+          const vData = await vRes.json();
+          vaultCaps = vData.capabilities || [];
+        }
+      } catch {
+        // fallback to server store
+      }
+
       const res = await fetch(`/api/proposals/${selectedProposal.id}/draft`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           opportunity: oppPayload,
-          capabilities: [],
-          requirements: [],
+          capabilities: vaultCaps,
+          requirements: (selectedProposal.metadata as any)?.parsedRequirements || [],
           sectionCode,
         }),
       });
@@ -237,6 +271,16 @@ export default function ProposalsPage() {
             <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
             <span>새로고침</span>
           </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => handleCreateFromSample(0)}
+            disabled={creating}
+            className="gap-1.5 text-xs text-primary border-primary/30 hover:bg-primary/10"
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            <span>실습용 AGV 로봇 제안서 즉시 생성</span>
+          </Button>
           <Button size="sm" onClick={() => setShowCreateModal(true)} className="gap-2">
             <Plus className="h-4 w-4" />
             <span>새 제안서 작성</span>
@@ -290,7 +334,9 @@ export default function ProposalsPage() {
           <EmptyState
             icon={FileSpreadsheet}
             title="작성 중인 제안서가 없습니다"
-            description="공모 목록에서 'GO' 의사결정을 완료하거나, 상단의 '새 제안서 작성' 버튼을 눌러 표준 목차 기반 워크스페이스를 생성할 수 있습니다."
+            description="API Key 없이도 [실습용 AGV 로봇 제안서 즉시 생성] 버튼을 누르면 실제 조달청 물품구매 공고 기반 표준 7대 목차 워크스페이스가 즉시 활성화됩니다."
+            actionLabel={creating ? "생성 중..." : "실습용 AGV 로봇 제안서 즉시 생성하기"}
+            onAction={() => handleCreateFromSample(0)}
           />
         </div>
       )}

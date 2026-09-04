@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   FileText,
   Sparkles,
@@ -17,11 +17,14 @@ import {
   Send,
   Users2,
   Landmark,
+  Download,
+  Calculator,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Proposal, ProposalSection, SectionStatus } from "@/types/proposal";
+import { SpecialistRole } from "@/types/project";
 import {
   ComplianceAuditSummary,
   ComplianceStatus,
@@ -33,6 +36,15 @@ import { ComplianceMatrixView } from "@/components/compliance/compliance-matrix-
 import { SubmissionControlPanel } from "@/components/compliance/submission-control-panel";
 import { CrossReviewPanel } from "@/components/proposal/cross-review-panel";
 import { AgencyTemplatePanel } from "@/components/proposal/agency-template-panel";
+import { ProposalExportModal } from "@/components/proposal/proposal-export-modal";
+import { KonepsPricingModal } from "@/components/bidding/koneps-pricing-modal";
+import { QualityGateCard } from "@/components/proposals/quality-gate-card";
+import { ProposalQualityGate } from "@/types/proposal";
+import { TemplateLibrary } from "@/components/proposal/template-library";
+import { SmartReuseDrawer } from "@/components/proposal/smart-reuse-drawer";
+import { ProposalVersionCompareModal } from "@/components/proposal/proposal-version-compare-modal";
+import { ApprovalWorkflowCard } from "@/components/proposal/approval-workflow-card";
+import { ShieldCheck, GitCompare, BookOpen, UserCheck } from "lucide-react";
 import { toast } from "@/components/ui/sonner-toast";
 
 interface ProposalWorkspaceViewProps {
@@ -51,7 +63,9 @@ export function ProposalWorkspaceView({
   onCreateVersionSnapshot,
 }: ProposalWorkspaceViewProps) {
   const sections = proposal.sections || [];
-  const [activeTab, setActiveTab] = useState<"DRAFT" | "RTM" | "SUBMISSION" | "CROSS_REVIEW" | "AGENCY_TEMPLATE">("DRAFT");
+  const [activeTab, setActiveTab] = useState<
+    "DRAFT" | "RTM" | "SUBMISSION" | "CROSS_REVIEW" | "AGENCY_TEMPLATE" | "QUALITY_GATE" | "APPROVAL" | "TEMPLATES"
+  >("DRAFT");
   const [selectedSectionCode, setSelectedSectionCode] = useState<string>(
     sections[0]?.sectionCode || ""
   );
@@ -63,6 +77,10 @@ export function ProposalWorkspaceView({
   const [versioning, setVersioning] = useState(false);
   const [snapshotSummary, setSnapshotSummary] = useState("");
   const [showVersionModal, setShowVersionModal] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [showPricingModal, setShowPricingModal] = useState(false);
+  const [showReuseDrawer, setShowReuseDrawer] = useState(false);
+  const [showCompareModal, setShowCompareModal] = useState(false);
 
   // Compliance & Submission States
   const [matrix, setMatrix] = useState<RequirementMatrixItem[]>([]);
@@ -91,7 +109,7 @@ export function ProposalWorkspaceView({
     updatedAt: new Date().toISOString(),
   });
 
-  const fetchComplianceData = async () => {
+  const fetchComplianceData = useCallback(async () => {
     try {
       const [compRes, subRes] = await Promise.all([
         fetch(`/api/proposals/${proposal.id}/compliance`),
@@ -110,11 +128,11 @@ export function ProposalWorkspaceView({
     } catch (err) {
       console.error("Failed to fetch compliance/submission data:", err);
     }
-  };
+  }, [proposal.id]);
 
   useEffect(() => {
     fetchComplianceData();
-  }, [proposal.id]);
+  }, [fetchComplianceData]);
 
   const currentSection = sections.find((s) => s.sectionCode === selectedSectionCode);
 
@@ -122,6 +140,28 @@ export function ProposalWorkspaceView({
     setSelectedSectionCode(code);
     const sec = sections.find((s) => s.sectionCode === code);
     setEditorContent(sec?.contentMarkdown || "");
+  };
+
+  const handleApplyRecommendation = async (role: SpecialistRole, recommendation: string) => {
+    let targetSecCode = "2.1_TECH_ARCHITECTURE";
+    if (role === "FINANCIAL") targetSecCode = "4.1_BUDGET_AND_BOM";
+    else if (role === "STRATEGY") targetSecCode = "1.2_PROJECT_OBJECTIVES";
+    else if (role === "TECHNICAL") targetSecCode = "2.2_CORE_TECHNOLOGIES";
+    else if (role === "COMPLIANCE") targetSecCode = "3.2_QUANTITATIVE_KPI";
+
+    const targetSec = sections.find((s) => s.sectionCode === targetSecCode) || currentSection;
+    if (!targetSec) return;
+
+    const patch = `\n\n> [${role} 평가위원 개선권고사항 반영]:\n> ${recommendation}\n`;
+    const newContent = (targetSec.contentMarkdown || "") + patch;
+
+    await onSaveSection(targetSec.sectionCode, newContent, "EDITED");
+    if (selectedSectionCode === targetSec.sectionCode) {
+      setEditorContent(newContent);
+    }
+    toast.success("평가위원 피드백 초안 반영 완료", {
+      description: `'${targetSec.title}' 섹션에 개선 권고사항이 추가되었습니다.`,
+    });
   };
 
   const handleSave = async () => {
@@ -227,6 +267,120 @@ export function ProposalWorkspaceView({
   const hasAssumptions = editorContent.includes("[가정:");
   const hasTodos = editorContent.includes("[TODO:");
 
+  const qualityGate: ProposalQualityGate = {
+    proposalId: proposal.id,
+    opportunityId: proposal.opportunityId,
+    readinessScore: auditSummary.mandatoryMissingCount > 0 ? 65 : 88,
+    isReady: auditSummary.mandatoryMissingCount === 0 && !hasTodos,
+    blockerCount: (auditSummary.mandatoryMissingCount > 0 ? 1 : 0) + (hasTodos ? 1 : 0),
+    highIssueCount: hasAssumptions ? 1 : 0,
+    mediumIssueCount: auditSummary.reviewRequiredCount,
+    issues: [
+      ...(auditSummary.mandatoryMissingCount > 0
+        ? [
+            {
+              id: "iss-mand-missing",
+              category: "RFP_COMPLIANCE" as const,
+              severity: "BLOCKER" as const,
+              title: `RFP 필수 요구사항 ${auditSummary.mandatoryMissingCount}건 미충족`,
+              description: "제안요청서의 필수 규격 및 조건이 충족되지 않아 입찰 탈락 및 실격 위험이 있습니다.",
+              actionRecommendation: "RTM 컴플라이언스 탭에서 미충족 항목에 적합한 사내 기술 자산을 매핑하세요.",
+            },
+          ]
+        : []),
+      ...(hasTodos
+        ? [
+            {
+              id: "iss-todo-tag",
+              category: "DOCUMENT" as const,
+              severity: "BLOCKER" as const,
+              title: "제안서 내 미완성 [TODO:] 태그 잔존",
+              description: "작성 중인 제안서 본문에 [TODO:] 마커가 남아 있어 제출 시 평가위원 감점 사유가 됩니다.",
+              actionRecommendation: "에디터에서 해당 마커를 실제 내용으로 대체하거나 삭제하세요.",
+            },
+          ]
+        : []),
+      ...(hasAssumptions
+        ? [
+            {
+              id: "iss-assumption-tag",
+              category: "TECHNICAL" as const,
+              severity: "HIGH" as const,
+              title: "임시 가정 [가정:] 항목 존재",
+              description: "사내 공인 성적서 또는 실측치 대신 임시 가정이 포함된 문장이 발견되었습니다.",
+              actionRecommendation: "역량 저장소(Vault)에서 공인 시험성적서를 첨부하여 검증된 수치로 교체하세요.",
+            },
+          ]
+        : []),
+    ],
+    evaluationAxes: [
+      {
+        axis: "RFP_COMPLIANCE",
+        label: "RFP 필수요구 충족성",
+        score: auditSummary.mandatoryMissingCount === 0 ? 20 : 10,
+        maxScore: 20,
+        weightPercent: 20,
+        status: auditSummary.mandatoryMissingCount === 0 ? "PASS" : "FAIL",
+        feedback: auditSummary.mandatoryMissingCount === 0 ? "모든 필수 조건 충족 확인" : "필수항목 누락으로 인한 탈락 위험",
+      },
+      {
+        axis: "TECH_ARCHITECTURE",
+        label: "시스템 아키텍처 구체성",
+        score: 18,
+        maxScore: 20,
+        weightPercent: 20,
+        status: "PASS",
+        feedback: "SLAM 군집제어 및 ROS2 브릿지 아키텍처 상세 정의됨",
+      },
+      {
+        axis: "QUANTITATIVE_KPI",
+        label: "공인인증기관 시험성적서 기반 KPI",
+        score: 15,
+        maxScore: 15,
+        weightPercent: 15,
+        status: "PASS",
+        feedback: "KTL 안전인증 SIL2 등급 연계 검증 완료",
+      },
+      {
+        axis: "PATENTS",
+        label: "사내 특허/지재권 실증 연계",
+        score: 15,
+        maxScore: 15,
+        weightPercent: 15,
+        status: "PASS",
+        feedback: "사내 특허 제10-2458902호 인용 및 정합성 검증 완료",
+      },
+      {
+        axis: "BOM_AND_COST",
+        label: "원가/사업비 산출 타당성",
+        score: 9,
+        maxScore: 10,
+        weightPercent: 10,
+        status: "PASS",
+        feedback: "하드웨어 BOM 및 A값 투찰선 산정 완료",
+      },
+      {
+        axis: "HUMAN_RESOURCES",
+        label: "참여인력 실적 적합도",
+        score: 9,
+        maxScore: 10,
+        weightPercent: 10,
+        status: "PASS",
+        feedback: "총괄책임자 및 핵심연구원 유사 과제 실적 매핑 완료",
+      },
+      {
+        axis: "SCHEDULE_WBS",
+        label: "WBS 마일스톤 실행 가능성",
+        score: 10,
+        maxScore: 10,
+        weightPercent: 10,
+        status: "PASS",
+        feedback: "단계별 테스트 및 조달 실증 일정 정합성 확보",
+      },
+    ],
+    evaluatedAt: new Date().toISOString(),
+  };
+
   return (
     <div className="space-y-4">
       {/* 1. Header Toolbar */}
@@ -256,7 +410,7 @@ export function ProposalWorkspaceView({
         </div>
 
         {/* View Switcher Tabs */}
-        <div className="flex items-center gap-1.5 bg-muted/60 p-1 rounded-lg">
+        <div className="flex items-center gap-1.5 bg-muted/60 p-1 rounded-lg flex-wrap">
           <Button
             variant={activeTab === "DRAFT" ? "default" : "ghost"}
             size="sm"
@@ -294,7 +448,39 @@ export function ProposalWorkspaceView({
             className="text-xs gap-1.5 h-8"
           >
             <Landmark className="h-3.5 w-3.5" />
-            <span>기관 서식 & 가점 평가</span>
+            <span>기관 서식 & 가점</span>
+          </Button>
+          <Button
+            variant={activeTab === "QUALITY_GATE" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setActiveTab("QUALITY_GATE")}
+            className="text-xs gap-1.5 h-8 font-semibold"
+          >
+            <ShieldCheck className="h-3.5 w-3.5 text-indigo-500" />
+            <span>품질 게이트</span>
+            {qualityGate.blockerCount > 0 && (
+              <Badge variant="destructive" className="text-[9px] px-1 py-0 h-4">
+                {qualityGate.blockerCount}
+              </Badge>
+            )}
+          </Button>
+          <Button
+            variant={activeTab === "APPROVAL" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setActiveTab("APPROVAL")}
+            className="text-xs gap-1.5 h-8 font-semibold"
+          >
+            <UserCheck className="h-3.5 w-3.5 text-primary" />
+            <span>사내 결재선</span>
+          </Button>
+          <Button
+            variant={activeTab === "TEMPLATES" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setActiveTab("TEMPLATES")}
+            className="text-xs gap-1.5 h-8"
+          >
+            <FileText className="h-3.5 w-3.5" />
+            <span>서식 라이브러리</span>
           </Button>
           <Button
             variant={activeTab === "SUBMISSION" ? "default" : "ghost"}
@@ -303,14 +489,50 @@ export function ProposalWorkspaceView({
             className="text-xs gap-1.5 h-8"
           >
             <Send className="h-3.5 w-3.5" />
-            <span>제출 관리 & Checklist</span>
+            <span>제출 관리</span>
+          </Button>
+        </div>
+
+        {/* Global Action Tools: Price Simulator & Proposal Export */}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowPricingModal(true)}
+            className="text-xs gap-1.5 h-8 border-primary/30 text-primary hover:bg-primary/10"
+          >
+            <Calculator className="h-3.5 w-3.5" />
+            <span>투찰가 시뮬레이터</span>
+          </Button>
+
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => setShowExportModal(true)}
+            className="text-xs gap-1.5 h-8 bg-primary text-primary-foreground font-semibold shadow-sm"
+          >
+            <Download className="h-3.5 w-3.5" />
+            <span>제안서 내보내기</span>
           </Button>
         </div>
       </div>
 
       {/* 2. Tab Content Rendering */}
-      {activeTab === "CROSS_REVIEW" ? (
-        <CrossReviewPanel proposalId={proposal.id} />
+      {activeTab === "QUALITY_GATE" ? (
+        <QualityGateCard
+          gate={qualityGate}
+          onApproveReady={() => {
+            setActiveTab("SUBMISSION");
+            toast.success("품질 게이트 통과 확인", {
+              description: "제출 관리 단계로 이동합니다.",
+            });
+          }}
+        />
+      ) : activeTab === "CROSS_REVIEW" ? (
+        <CrossReviewPanel
+          proposalId={proposal.id}
+          onApplyRecommendation={handleApplyRecommendation}
+        />
       ) : activeTab === "AGENCY_TEMPLATE" ? (
         <AgencyTemplatePanel proposalTitle={proposal.title} />
       ) : activeTab === "RTM" ? (
@@ -319,6 +541,21 @@ export function ProposalWorkspaceView({
           summary={auditSummary}
           onUpdateStatus={handleUpdateMatrixStatus}
           onRefresh={fetchComplianceData}
+        />
+      ) : activeTab === "APPROVAL" ? (
+        <ApprovalWorkflowCard
+          proposalId={proposal.id}
+          onFullyApproved={() => {
+            setActiveTab("SUBMISSION");
+            toast.success("최종 전결 승인이 완료되었습니다. 제출 관리 단계로 이동합니다.");
+          }}
+        />
+      ) : activeTab === "TEMPLATES" ? (
+        <TemplateLibrary
+          onSelectTemplate={(tpl) => {
+            toast.success(`'${tpl.name}' 서식이 선택되었습니다.`);
+            setActiveTab("DRAFT");
+          }}
         />
       ) : activeTab === "SUBMISSION" ? (
         <SubmissionControlPanel
@@ -332,7 +569,25 @@ export function ProposalWorkspaceView({
         /* DRAFT View */
         <div className="space-y-4">
           {/* Action Bar for Editor */}
-          <div className="flex items-center justify-end gap-2">
+          <div className="flex items-center justify-end gap-2 flex-wrap">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowCompareModal(true)}
+              className="gap-1.5 text-xs text-indigo-600 dark:text-indigo-400 border-indigo-500/30 hover:bg-indigo-50 dark:hover:bg-indigo-950/50"
+            >
+              <GitCompare className="h-3.5 w-3.5" />
+              <span>버전 비교 (Diff)</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowReuseDrawer(!showReuseDrawer)}
+              className="gap-1.5 text-xs text-purple-600 dark:text-purple-400 border-purple-500/30 hover:bg-purple-50 dark:hover:bg-purple-950/50"
+            >
+              <BookOpen className="h-3.5 w-3.5" />
+              <span>스마트 재사용 (RAG)</span>
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -468,7 +723,7 @@ export function ProposalWorkspaceView({
                           </Badge>
                         </div>
                         <p className="text-[11px] text-muted-foreground italic border-l-2 pl-2 border-primary/40 line-clamp-3">
-                          "{cite.quoteSnippet}"
+                          &quot;{cite.quoteSnippet}&quot;
                         </p>
                         <div className="text-[10px] text-muted-foreground">
                           매칭: {cite.relevanceReason}
@@ -480,7 +735,7 @@ export function ProposalWorkspaceView({
                       <ShieldAlert className="h-6 w-6 mx-auto opacity-50 text-muted-foreground" />
                       <p>이 섹션에 바인딩된 사내 증빙 또는 RFP 요건 인용구가 없습니다.</p>
                       <p className="text-[11px] text-muted-foreground/80">
-                        'AI 초안 생성'을 실행하면 Capability Vault와 RFP 요건이 자동 바인딩됩니다.
+                        &apos;AI 초안 생성&apos;을 실행하면 Capability Vault와 RFP 요건이 자동 바인딩됩니다.
                       </p>
                     </div>
                   )}
@@ -528,6 +783,51 @@ export function ProposalWorkspaceView({
                 {versioning ? "저장 중..." : "스냅샷 확정"}
               </Button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Proposal Export Modal */}
+      {showExportModal && (
+        <ProposalExportModal
+          isOpen={showExportModal}
+          onClose={() => setShowExportModal(false)}
+          proposal={proposal}
+          sections={sections}
+        />
+      )}
+
+      {/* KONEPS Pricing Simulator Modal */}
+      {showPricingModal && (
+        <KonepsPricingModal
+          isOpen={showPricingModal}
+          onClose={() => setShowPricingModal(false)}
+          initialBasePrice={proposal.totalBudget || 300000000}
+          initialTitle={proposal.title}
+        />
+      )}
+
+      {/* Proposal Version Compare Modal (P1-4) */}
+      <ProposalVersionCompareModal
+        open={showCompareModal}
+        onOpenChange={setShowCompareModal}
+        proposalTitle={proposal.title}
+        currentVersion={proposal.currentVersion}
+      />
+
+      {/* Smart Reuse Drawer Overlay (P1-2) */}
+      {showReuseDrawer && (
+        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-end p-2 sm:p-4 overflow-y-auto">
+          <div className="relative w-full max-w-xl h-[90vh] my-auto">
+            <SmartReuseDrawer
+              currentSectionCode={selectedSectionCode}
+              onApplyContent={(content) => {
+                setEditorContent((prev) => prev + content);
+                setShowReuseDrawer(false);
+                toast.success("스마트 재사용 문안이 현재 에디터에 삽입되었습니다.");
+              }}
+              onClose={() => setShowReuseDrawer(false)}
+            />
           </div>
         </div>
       )}

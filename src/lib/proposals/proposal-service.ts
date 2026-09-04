@@ -8,6 +8,7 @@ import {
   STANDARD_PROPOSAL_TOC,
 } from '@/types/proposal';
 import { ProposalDraftingEngine } from './drafting-engine';
+import { SAMPLE_OPPORTUNITIES } from '@/lib/today/sample-scenarios';
 
 export class ProposalService {
   private draftingEngine: ProposalDraftingEngine;
@@ -19,6 +20,17 @@ export class ProposalService {
 
   constructor(draftingEngine?: ProposalDraftingEngine) {
     this.draftingEngine = draftingEngine || new ProposalDraftingEngine();
+    this.seedDefault();
+  }
+
+  public seedDefault(): void {
+    if (this.memoryProposals.size === 0 && SAMPLE_OPPORTUNITIES.length > 0) {
+      this.createProposalFromOpportunity(SAMPLE_OPPORTUNITIES[0], {
+        userId: 'usr-pm-1',
+        targetSubmissionDate: SAMPLE_OPPORTUNITIES[0].submissionDeadline,
+        totalBudget: SAMPLE_OPPORTUNITIES[0].allocatedBudget || 850000000,
+      });
+    }
   }
 
   /**
@@ -113,6 +125,53 @@ export class ProposalService {
     }
 
     // 제안서 메타데이터 갱신
+    const proposal = this.memoryProposals.get(proposalId);
+    if (proposal) {
+      proposal.updatedAt = now;
+    }
+
+    return sections;
+  }
+
+  /**
+   * LLM 연동 RAG 기반 제안서 섹션 초안 일괄 또는 단일 비동기 생성
+   */
+  public async generateDraftAsync(
+    proposalId: string,
+    opportunity: Opportunity,
+    capabilities: CapabilityRecord[],
+    requirements: RequirementCandidate[],
+    targetSectionCode?: string
+  ): Promise<ProposalSection[]> {
+    const sections = this.memorySections.get(proposalId);
+    if (!sections) {
+      throw new Error(`Proposal not found: ${proposalId}`);
+    }
+
+    const now = new Date().toISOString();
+
+    for (const section of sections) {
+      if (targetSectionCode && section.sectionCode !== targetSectionCode) {
+        continue;
+      }
+
+      const tocItem = STANDARD_PROPOSAL_TOC.find((t) => t.sectionCode === section.sectionCode);
+      if (!tocItem) continue;
+
+      const draftResult = await this.draftingEngine.generateSectionDraftAsync({
+        opportunity,
+        tocItem,
+        capabilities,
+        requirements,
+      });
+
+      section.contentMarkdown = draftResult.contentMarkdown;
+      section.evidenceCitations = draftResult.evidenceCitations;
+      section.status = 'AI_GENERATED';
+      section.version += 1;
+      section.updatedAt = now;
+    }
+
     const proposal = this.memoryProposals.get(proposalId);
     if (proposal) {
       proposal.updatedAt = now;
@@ -217,7 +276,12 @@ export class ProposalService {
   public listProposals(organizationId: string): Proposal[] {
     const list: Proposal[] = [];
     for (const p of this.memoryProposals.values()) {
-      if (p.organizationId === organizationId) {
+      const matchesOrg =
+        !organizationId ||
+        p.organizationId === organizationId ||
+        (organizationId === 'org-robobid-default' &&
+          p.organizationId === 'b0000000-0000-0000-0000-000000000001');
+      if (matchesOrg) {
         list.push({
           ...p,
           sections: this.memorySections.get(p.id) || [],
