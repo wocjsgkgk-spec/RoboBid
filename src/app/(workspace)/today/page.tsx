@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
+import { MetricCard } from "@/components/ui/metric-card";
 import Link from "next/link";
 import { TodayBidOpsSummary } from "@/types/today";
 
@@ -129,69 +130,45 @@ export default function TodayPage() {
 
       {/* 3. Core Metrics: 업무 중심 4대 정량 지표 (Zero Fake Data) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="border-l-4 border-l-destructive shadow-xs">
-          <CardHeader className="p-4 pb-1">
-            <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-xs font-semibold uppercase">긴급 조치 업무</span>
-              <AlertTriangle className="h-4 w-4 text-destructive" />
-            </div>
-          </CardHeader>
-          <CardContent className="p-4 pt-0">
-            <div className="text-2xl font-bold text-foreground">
-              {urgentActionCount}
-              <span className="text-xs font-normal text-muted-foreground ml-1">건</span>
-            </div>
-            <p className="text-[11px] text-muted-foreground mt-0.5">D-3 마감 / 필수 조치</p>
-          </CardContent>
-        </Card>
+        <MetricCard
+          title="긴급 조치 업무"
+          value={`${urgentActionCount}건`}
+          subtitle="D-3 마감 / 필수 조치"
+          icon={AlertTriangle}
+          badgeText={urgentActionCount > 0 ? "ACTION REQUIRED" : "NORMAL"}
+          badgeVariant={urgentActionCount > 0 ? "destructive" : "secondary"}
+          className="border-l-4 border-l-destructive"
+        />
 
-        <Card className="border-l-4 border-l-primary shadow-xs">
-          <CardHeader className="p-4 pb-1">
-            <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-xs font-semibold uppercase">고적합 신규 추천</span>
-              <Sparkles className="h-4 w-4 text-primary" />
-            </div>
-          </CardHeader>
-          <CardContent className="p-4 pt-0">
-            <div className="text-2xl font-bold text-foreground">
-              {newRecommendationCount}
-              <span className="text-xs font-normal text-muted-foreground ml-1">건</span>
-            </div>
-            <p className="text-[11px] text-muted-foreground mt-0.5">적합도 점수 70점 이상</p>
-          </CardContent>
-        </Card>
+        <MetricCard
+          title="고적합 신규 추천"
+          value={`${newRecommendationCount}건`}
+          subtitle="적합도 점수 70점 이상"
+          icon={Sparkles}
+          badgeText={newRecommendationCount > 0 ? "HIGH MATCH" : "NONE"}
+          badgeVariant={newRecommendationCount > 0 ? "success" : "secondary"}
+          className="border-l-4 border-l-primary"
+        />
 
-        <Card className="border-l-4 border-l-amber-500 shadow-xs">
-          <CardHeader className="p-4 pb-1">
-            <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-xs font-semibold uppercase">GO / NO-GO 대기</span>
-              <CalendarCheck className="h-4 w-4 text-amber-500" />
-            </div>
-          </CardHeader>
-          <CardContent className="p-4 pt-0">
-            <div className="text-2xl font-bold text-foreground">
-              {pendingDecisionCount}
-              <span className="text-xs font-normal text-muted-foreground ml-1">건</span>
-            </div>
-            <p className="text-[11px] text-muted-foreground mt-0.5">검토 및 조건 승인 요망</p>
-          </CardContent>
-        </Card>
+        <MetricCard
+          title="GO / NO-GO 대기"
+          value={`${pendingDecisionCount}건`}
+          subtitle="검토 및 조건 승인 요망"
+          icon={CalendarCheck}
+          badgeText={pendingDecisionCount > 0 ? "PENDING" : "CLEAR"}
+          badgeVariant={pendingDecisionCount > 0 ? "warning" : "secondary"}
+          className="border-l-4 border-l-amber-500"
+        />
 
-        <Card className="border-l-4 border-l-orange-500 shadow-xs">
-          <CardHeader className="p-4 pb-1">
-            <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-xs font-semibold uppercase">마감 임박 (D-3)</span>
-              <Clock className="h-4 w-4 text-orange-500" />
-            </div>
-          </CardHeader>
-          <CardContent className="p-4 pt-0">
-            <div className="text-2xl font-bold text-foreground">
-              {urgentDeadlineCount}
-              <span className="text-xs font-normal text-muted-foreground ml-1">건</span>
-            </div>
-            <p className="text-[11px] text-muted-foreground mt-0.5">제출 서류 최종 확인</p>
-          </CardContent>
-        </Card>
+        <MetricCard
+          title="마감 임박 (D-3)"
+          value={`${urgentDeadlineCount}건`}
+          subtitle="제출 서류 최종 확인"
+          icon={Clock}
+          badgeText={urgentDeadlineCount > 0 ? "DEADLINE" : "SAFE"}
+          badgeVariant={urgentDeadlineCount > 0 ? "warning" : "secondary"}
+          className="border-l-4 border-l-orange-500"
+        />
       </div>
 
       {/* 4. Main Work Sections (2 Columns Layout) */}

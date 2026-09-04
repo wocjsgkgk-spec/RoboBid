@@ -33,6 +33,7 @@ import { ComplianceMatrixView } from "@/components/compliance/compliance-matrix-
 import { SubmissionControlPanel } from "@/components/compliance/submission-control-panel";
 import { CrossReviewPanel } from "@/components/proposal/cross-review-panel";
 import { AgencyTemplatePanel } from "@/components/proposal/agency-template-panel";
+import { toast } from "@/components/ui/sonner-toast";
 
 interface ProposalWorkspaceViewProps {
   proposal: Proposal;
@@ -129,6 +130,11 @@ export function ProposalWorkspaceView({
     try {
       await onSaveSection(currentSection.sectionCode, editorContent, "EDITED");
       await fetchComplianceData();
+      toast.success("섹션 내용 저장 완료", {
+        description: `'${currentSection.title}' 수정 사항이 저장되었습니다.`,
+      });
+    } catch (err: any) {
+      toast.error("저장 실패", { description: err.message });
     } finally {
       setSaving(false);
     }
@@ -143,6 +149,11 @@ export function ProposalWorkspaceView({
         setEditorContent(sec.contentMarkdown);
       }
       await fetchComplianceData();
+      toast.success("AI 초안 생성 완료", {
+        description: "RFP 및 사내 역량 자산 Citation이 연결되었습니다.",
+      });
+    } catch (err: any) {
+      toast.error("생성 실패", { description: err.message });
     } finally {
       setGenerating(false);
     }
@@ -155,6 +166,11 @@ export function ProposalWorkspaceView({
       await onCreateVersionSnapshot(snapshotSummary);
       setShowVersionModal(false);
       setSnapshotSummary("");
+      toast.success("새 버전 스냅샷 생성 완료", {
+        description: `v${proposal.currentVersion + 1} 스냅샷이 생성되었습니다.`,
+      });
+    } catch (err: any) {
+      toast.error("스냅샷 생성 실패", { description: err.message });
     } finally {
       setVersioning(false);
     }

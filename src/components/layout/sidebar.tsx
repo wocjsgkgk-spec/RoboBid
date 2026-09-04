@@ -55,7 +55,7 @@ export function Sidebar() {
       {/* Nav List */}
       <div className="flex flex-1 flex-col justify-between p-4 space-y-4">
         <nav className="space-y-1">
-          <div className="px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <div className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70">
             워크스페이스
           </div>
           {PRIMARY_NAV_ITEMS.map((item) => {
@@ -66,44 +66,57 @@ export function Sidebar() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                  "flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium transition-all duration-150",
                   isActive
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                    ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20 font-semibold"
+                    : "text-muted-foreground hover:bg-accent/70 hover:text-foreground"
                 )}
               >
-                <Icon className="h-4 w-4" />
-                {item.label}
+                <Icon className={cn("h-4 w-4", isActive ? "text-primary-foreground" : "text-muted-foreground")} />
+                <span>{item.label}</span>
               </Link>
             );
           })}
         </nav>
 
-        <nav className="space-y-1 pt-4 border-t">
-          <div className="px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-            인텔리전스 & 설정
+        <div className="space-y-3">
+          <nav className="space-y-1 pt-3 border-t border-border/60">
+            <div className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70">
+              인텔리전스 & 도구
+            </div>
+            {SECONDARY_NAV_ITEMS.map((item) => {
+              const isActive = pathname.startsWith(item.href);
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium transition-all duration-150",
+                    item.highlight && !isActive && "text-primary font-semibold hover:bg-primary/10",
+                    isActive
+                      ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20 font-semibold"
+                      : "text-muted-foreground hover:bg-accent/70 hover:text-foreground"
+                  )}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* Enterprise Status Footer */}
+          <div className="p-3 rounded-lg bg-muted/40 border border-border/40 text-[11px] space-y-1 text-muted-foreground">
+            <div className="flex items-center justify-between font-mono">
+              <span className="font-semibold text-foreground">RoboBid Ops</span>
+              <span className="text-[10px] text-primary bg-primary/10 px-1.5 py-0.2 rounded font-bold">v1.2 Live</span>
+            </div>
+            <p className="text-[10px] leading-tight">
+              KONEPS / IRIS / TIPA 공공 연계 엔진
+            </p>
           </div>
-          {SECONDARY_NAV_ITEMS.map((item) => {
-            const isActive = pathname.startsWith(item.href);
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                  item.highlight && !isActive && "text-primary hover:bg-primary/10",
-                  isActive
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                )}
-              >
-                <Icon className="h-4 w-4" />
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
+        </div>
       </div>
     </aside>
   );

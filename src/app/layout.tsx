@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { ThemeProvider } from "@/components/theme-provider";
 import { PwaInstallPrompt } from "@/components/pwa/pwa-install-prompt";
+import { Toaster } from "@/components/ui/sonner-toast";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -32,6 +33,7 @@ export default function RootLayout({
         <ThemeProvider defaultTheme="light" storageKey="robobid-theme">
           {children}
           <PwaInstallPrompt />
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>

@@ -15,6 +15,8 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { MetricCard } from "@/components/ui/metric-card";
+import { ProgressBar } from "@/components/ui/progress-bar";
 import { PublicAgencyType, AGENCY_TEMPLATES } from "@/lib/proposals/agency-templates";
 import { AgencyEvaluationResult } from "@/lib/scoring/agency-evaluation-criteria";
 
@@ -88,45 +90,34 @@ export function AgencyTemplatePanel({
 
       {/* Agency Summary KPI */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="border-primary/30">
-          <CardHeader className="py-3">
-            <CardDescription className="text-xs">선택 기관 및 서식 규격</CardDescription>
-            <CardTitle className="text-base font-bold text-foreground truncate">
-              {template.name}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0 text-xs text-muted-foreground">
-            {template.description}
-          </CardContent>
-        </Card>
+        <MetricCard
+          title="선택 기관 및 서식 규격"
+          value={template.shortName}
+          subtitle={template.description}
+          icon={Landmark}
+          badgeText={template.agencyType}
+          className="border-primary/40"
+        />
 
-        <Card>
-          <CardHeader className="py-3">
-            <CardDescription className="text-xs">평가 배점 구조</CardDescription>
-            <CardTitle className="text-base font-bold text-foreground">
-              기술 {evaluation?.technicalWeight || 80}% : 가격 {evaluation?.priceWeight || 20}%
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0 text-xs text-muted-foreground">
-            {template.evaluationFocus}
-          </CardContent>
-        </Card>
+        <MetricCard
+          title="평가 배점 구조"
+          value={`기술 ${evaluation?.technicalWeight || 80}%`}
+          subtitle={template.evaluationFocus}
+          icon={Scale}
+          badgeText={`가격 ${evaluation?.priceWeight || 20}%`}
+          progress={evaluation?.technicalWeight || 80}
+        />
 
-        <Card className="bg-primary/5 border-primary/20">
-          <CardHeader className="py-3">
-            <CardDescription className="text-xs">사내 자산 기반 법정 가점 확보</CardDescription>
-            <CardTitle className="text-2xl font-bold text-primary flex items-center gap-1.5">
-              <Award className="h-5 w-5" />
-              +{evaluation?.effectiveBonusPoints.toFixed(1) ?? "0.0"}점
-              <span className="text-xs font-normal text-muted-foreground ml-1">
-                / 최대 {evaluation?.maxAllowableBonus.toFixed(1)}점
-              </span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0 text-xs text-primary font-medium">
-            {evaluation?.evaluationSummary || "가점 항목 분석 중..."}
-          </CardContent>
-        </Card>
+        <MetricCard
+          title="사내 자산 기반 법정 가점 확보"
+          value={`+${evaluation?.effectiveBonusPoints.toFixed(1) ?? "0.0"}점`}
+          subtitle={evaluation?.evaluationSummary || "가점 항목 분석 중..."}
+          icon={Award}
+          badgeText={`MAX ${evaluation?.maxAllowableBonus.toFixed(1)}점`}
+          badgeVariant="success"
+          progress={evaluation ? Math.round((evaluation.effectiveBonusPoints / evaluation.maxAllowableBonus) * 100) : 0}
+          className="border-l-4 border-l-emerald-500"
+        />
       </div>
 
       {/* Two Column Layout: Left (Legal Bonus Points), Right (TOC & Mandatory Docs) */}

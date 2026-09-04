@@ -5,6 +5,7 @@ import { Search, Filter, Layers, ExternalLink, RefreshCw, Calendar, Building, Do
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
+import { toast } from "@/components/ui/sonner-toast";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 interface OpportunityItem {
@@ -55,12 +56,24 @@ export default function OpportunitiesPage() {
   const handleManualSync = async () => {
     setIsSyncing(true);
     try {
-      await fetch("/api/ingestion/sync", {
+      const res = await fetch("/api/ingestion/sync", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
       });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("공공데이터 수집 완료", {
+          description: "새로운 공모 파이프라인 목록이 업데이트되었습니다.",
+        });
+      } else {
+        toast.info("수집 안내", {
+          description: data.result?.errorMessage || "동기화가 완료되었습니다.",
+        });
+      }
       fetchOpportunities();
+    } catch (err: any) {
+      toast.error("동기화 실패", { description: err.message });
     } finally {
       setIsSyncing(false);
     }

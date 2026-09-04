@@ -4,19 +4,30 @@ import React, { useEffect, useState } from "react";
 import {
   Award,
   Plus,
-  RefreshCw,
   Trash2,
   FileCheck,
-  AlertTriangle,
   Clock,
   ShieldCheck,
-  ExternalLink,
   Layers,
   Sparkles,
+  Calendar,
+  Building,
+  CheckCircle2,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { MetricCard } from "@/components/ui/metric-card";
+import { ProgressBar } from "@/components/ui/progress-bar";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { toast } from "@/components/ui/sonner-toast";
 import { CapabilityType } from "@/types/capability";
 
 interface CapabilityItem {
@@ -50,9 +61,8 @@ export default function CapabilityVaultPage() {
   const [selectedFilter, setSelectedFilter] = useState("ALL");
   const [isLoading, setIsLoading] = useState(true);
   const [isSeeding, setIsSeeding] = useState(false);
-  const [actionMsg, setActionMsg] = useState<string | null>(null);
 
-  // New capability simple modal state
+  // Radix Dialog modal state
   const [showAddModal, setShowAddModal] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newType, setNewType] = useState<CapabilityType>("PATENT");
@@ -66,8 +76,8 @@ export default function CapabilityVaultPage() {
       const res = await fetch("/api/vault");
       const data = await res.json();
       setCapabilities(data.capabilities || []);
-    } catch {
-      // Fallback
+    } catch (err: any) {
+      toast.error("역량 자산 로드 실패", { description: err.message });
     } finally {
       setIsLoading(false);
     }
@@ -79,7 +89,6 @@ export default function CapabilityVaultPage() {
 
   const handleSeedDefault = async () => {
     setIsSeeding(true);
-    setActionMsg(null);
     try {
       const res = await fetch("/api/vault", {
         method: "POST",
@@ -88,11 +97,13 @@ export default function CapabilityVaultPage() {
       });
       const data = await res.json();
       if (data.success) {
-        setActionMsg("대한민국 첨단 로봇·AI 표준 실데이터 자산(13건)이 성공적으로 적재되었습니다.");
+        toast.success("표준 실데이터 적재 완료", {
+          description: "대한민국 첨단 로봇·AI 표준 자산 13건이 등록되었습니다.",
+        });
         fetchCapabilities();
       }
     } catch (err: any) {
-      setActionMsg(`적재 실패: ${err.message}`);
+      toast.error("적재 실패", { description: err.message });
     } finally {
       setIsSeeding(false);
     }
@@ -104,11 +115,11 @@ export default function CapabilityVaultPage() {
       const res = await fetch(`/api/vault?id=${id}`, { method: "DELETE" });
       const data = await res.json();
       if (data.success) {
-        setActionMsg(`'${title}' 자산이 삭제되었습니다.`);
+        toast.success("역량 자산 삭제 완료", { description: `'${title}' 자산이 삭제되었습니다.` });
         fetchCapabilities();
       }
     } catch (err: any) {
-      setActionMsg(`삭제 오류: ${err.message}`);
+      toast.error("삭제 실패", { description: err.message });
     }
   };
 
@@ -136,11 +147,11 @@ export default function CapabilityVaultPage() {
         setNewDesc("");
         setNewValidUntil("");
         setNewEvidence("");
-        setActionMsg("신규 역량 자산이 등록되었습니다.");
+        toast.success("신규 역량 등록 완료", { description: `'${newTitle}' 자산이 등록되었습니다.` });
         fetchCapabilities();
       }
     } catch (err: any) {
-      alert(`등록 실패: ${err.message}`);
+      toast.error("등록 실패", { description: err.message });
     }
   };
 
@@ -152,18 +163,19 @@ export default function CapabilityVaultPage() {
   const totalCount = capabilities.length;
   const expiringSoonCount = capabilities.filter((c) => c.isExpiringSoon).length;
   const verifiedCount = capabilities.filter((c) => c.verificationStatus === "VERIFIED").length;
+  const verifiedPercent = totalCount ? Math.round((verifiedCount / totalCount) * 100) : 0;
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border/50 pb-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
             <Award className="h-6 w-6 text-primary" />
             사내 역량 금고 (Capability Vault)
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            특허, 기업인증, TRL 기술자산, 납품실적, 재무제표 등 공모 제안서 RAG 인용과 가점 평가의 원천 근거를 관리합니다.
+          <p className="text-xs text-muted-foreground mt-1">
+            특허, 인증서, TRL 기술자산, 납품실적, 결산 재무제표 등 공모 제안서 RAG 인용과 가점 평가의 원천 근거를 관리합니다.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -172,7 +184,7 @@ export default function CapabilityVaultPage() {
             size="sm"
             onClick={handleSeedDefault}
             disabled={isSeeding}
-            className="gap-2"
+            className="gap-2 text-xs h-9"
           >
             <Sparkles className="h-4 w-4 text-amber-500" />
             {isSeeding ? "적재 중..." : "표준 실데이터 세트 적재"}
@@ -180,7 +192,7 @@ export default function CapabilityVaultPage() {
           <Button
             size="sm"
             onClick={() => setShowAddModal(true)}
-            className="gap-2"
+            className="gap-2 text-xs h-9 shadow-sm"
           >
             <Plus className="h-4 w-4" />
             신규 역량 등록
@@ -188,66 +200,51 @@ export default function CapabilityVaultPage() {
         </div>
       </div>
 
-      {actionMsg && (
-        <div className="p-3 text-sm bg-primary/10 text-primary border border-primary/20 rounded-md flex items-center justify-between">
-          <span>{actionMsg}</span>
-          <button onClick={() => setActionMsg(null)} className="text-xs underline ml-4">
-            닫기
-          </button>
-        </div>
-      )}
-
-      {/* KPI Cards */}
+      {/* KPI Cards (Tremor Style MetricCards) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="py-4">
-            <CardDescription className="text-xs">보유 역량 자산 총계</CardDescription>
-            <CardTitle className="text-2xl font-bold">{totalCount}건</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0 text-xs text-muted-foreground">
-            특허, 인증, 기술, 실적, 재무 전 영역
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="py-4">
-            <CardDescription className="text-xs">검증 완료 (Verified) 자산</CardDescription>
-            <CardTitle className="text-2xl font-bold text-emerald-600">
-              {verifiedCount}건 ({totalCount ? Math.round((verifiedCount / totalCount) * 100) : 0}%)
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0 text-xs text-muted-foreground">
-            공식 증빙 서류 대조 완료 자산
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="py-4">
-            <CardDescription className="text-xs">만료 임박 (30일 이내) 경보</CardDescription>
-            <CardTitle className={`text-2xl font-bold ${expiringSoonCount > 0 ? "text-amber-500" : "text-muted-foreground"}`}>
-              {expiringSoonCount}건
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0 text-xs text-muted-foreground">
-            갱신 또는 재발급 필요 자산
-          </CardContent>
-        </Card>
+        <MetricCard
+          title="보유 역량 자산 총계"
+          value={`${totalCount}건`}
+          subtitle="특허, 인증, 기술, 실적, 재무 전 영역"
+          icon={Layers}
+          badgeText="ALL ASSETS"
+        />
+        <MetricCard
+          title="공식 검증 (Verified) 자산"
+          value={`${verifiedCount}건`}
+          subtitle="공식 증빙 서류 대조 완료 자산"
+          icon={ShieldCheck}
+          badgeText={`${verifiedPercent}% COMPLIANT`}
+          badgeVariant="success"
+          progress={verifiedPercent}
+        />
+        <MetricCard
+          title="만료 임박 (30일 이내) 경보"
+          value={`${expiringSoonCount}건`}
+          subtitle="유효기한 갱신 필요 자산"
+          icon={Clock}
+          badgeText={expiringSoonCount > 0 ? "RENEWAL REQUIRED" : "SAFE"}
+          badgeVariant={expiringSoonCount > 0 ? "warning" : "secondary"}
+          className={expiringSoonCount > 0 ? "border-l-4 border-l-amber-500" : ""}
+        />
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-2 border-b pb-3">
+      {/* Filter Tabs */}
+      <div className="flex flex-wrap items-center gap-1.5 bg-muted/40 p-1.5 rounded-lg border border-border/50">
         {TYPE_FILTERS.map((f) => (
           <Button
             key={f.value}
-            variant={selectedFilter === f.value ? "default" : "outline"}
+            variant={selectedFilter === f.value ? "default" : "ghost"}
             size="sm"
             onClick={() => setSelectedFilter(f.value)}
-            className="text-xs h-8"
+            className="text-xs h-7 px-2.5 rounded-md"
           >
             {f.label}
           </Button>
         ))}
       </div>
 
-      {/* List / Table */}
+      {/* List / Cards */}
       <div className="space-y-3">
         {isLoading ? (
           <div className="text-center py-12 text-sm text-muted-foreground">
@@ -270,14 +267,14 @@ export default function CapabilityVaultPage() {
           <div className="grid grid-cols-1 gap-3">
             {filteredItems.map((item) => {
               return (
-                <Card key={item.id} className="hover:border-primary/50 transition-colors">
+                <Card key={item.id} className="card-hover-effect border-border/60">
                   <CardContent className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="space-y-1.5 flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <Badge variant="outline" className="text-xs font-mono">
+                        <Badge variant="outline" className="text-[10px] font-mono">
                           {item.type}
                         </Badge>
-                        <h3 className="text-base font-semibold text-foreground truncate">
+                        <h3 className="text-sm font-bold text-foreground truncate">
                           {item.title}
                         </h3>
                         {item.verificationStatus === "VERIFIED" && (
@@ -302,18 +299,19 @@ export default function CapabilityVaultPage() {
 
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground pt-1">
                         {item.evidenceFileName && (
-                          <span className="flex items-center gap-1 text-primary">
+                          <span className="flex items-center gap-1 text-primary font-medium">
                             <FileCheck className="h-3.5 w-3.5" />
                             증빙: {item.evidenceFileName}
                           </span>
                         )}
                         {item.validUntil && (
-                          <span>
+                          <span className="flex items-center gap-1 font-mono">
+                            <Calendar className="h-3.5 w-3.5" />
                             유효기한: {item.validUntil}
                           </span>
                         )}
                         {item.metadata?.contractAmountKrw && (
-                          <span className="font-semibold text-foreground">
+                          <span className="font-semibold text-foreground font-mono">
                             실적금액: {(item.metadata.contractAmountKrw / 100000000).toFixed(1)}억원
                           </span>
                         )}
@@ -323,7 +321,7 @@ export default function CapabilityVaultPage() {
                           </span>
                         )}
                         {item.metadata?.trlLevel && (
-                          <span className="text-blue-600 font-semibold">
+                          <span className="text-primary font-semibold font-mono">
                             TRL {item.metadata.trlLevel}단계
                           </span>
                         )}
@@ -336,6 +334,7 @@ export default function CapabilityVaultPage() {
                         size="sm"
                         onClick={() => handleDelete(item.id, item.title)}
                         className="text-destructive hover:bg-destructive/10 h-8 w-8 p-0"
+                        title="자산 삭제"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -348,93 +347,94 @@ export default function CapabilityVaultPage() {
         )}
       </div>
 
-      {/* Add Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <Card className="w-full max-w-lg bg-card shadow-lg">
-            <CardHeader>
-              <CardTitle className="text-lg">신규 사내 역량 자산 등록</CardTitle>
-              <CardDescription className="text-xs">
-                제안서 RAG 인용 및 자격 심사(Eligibility)에 활용될 사내 증빙 자산을 등록합니다.
-              </CardDescription>
-            </CardHeader>
-            <form onSubmit={handleAddSubmit}>
-              <CardContent className="space-y-3 text-sm">
-                <div>
-                  <label className="block font-medium text-xs mb-1">자산 구분 (Type)</label>
-                  <select
-                    className="w-full p-2 text-xs border rounded-md bg-background"
-                    value={newType}
-                    onChange={(e) => setNewType(e.target.value as CapabilityType)}
-                  >
-                    <option value="PATENT">특허 및 지식재산권 (PATENT)</option>
-                    <option value="CERTIFICATION">기업 및 기술 인증서 (CERTIFICATION)</option>
-                    <option value="TECHNOLOGY">핵심 기술 및 TRL (TECHNOLOGY)</option>
-                    <option value="PROJECT_HISTORY">사업 및 납품 실적 (PROJECT_HISTORY)</option>
-                    <option value="FINANCIAL_PROFILE">재무제표 및 결산 (FINANCIAL_PROFILE)</option>
-                    <option value="COMPANY_PROFILE">회사 일반 프로필 (COMPANY_PROFILE)</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block font-medium text-xs mb-1">자산명 / 실적명 / 특허명 *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="예: 6축 협동로봇 안전제어 특허"
-                    className="w-full p-2 text-xs border rounded-md bg-background"
-                    value={newTitle}
-                    onChange={(e) => setNewTitle(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="block font-medium text-xs mb-1">상세 설명 / 기술 사양</label>
-                  <textarea
-                    rows={2}
-                    placeholder="공모 제안서 RAG 인용에 반영될 주요 특징 및 실적 내용"
-                    className="w-full p-2 text-xs border rounded-md bg-background"
-                    value={newDesc}
-                    onChange={(e) => setNewDesc(e.target.value)}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block font-medium text-xs mb-1">유효 만료일</label>
-                    <input
-                      type="date"
-                      className="w-full p-2 text-xs border rounded-md bg-background"
-                      value={newValidUntil}
-                      onChange={(e) => setNewValidUntil(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-medium text-xs mb-1">증빙 파일명</label>
-                    <input
-                      type="text"
-                      placeholder="예: 특허등록원부.pdf"
-                      className="w-full p-2 text-xs border rounded-md bg-background"
-                      value={newEvidence}
-                      onChange={(e) => setNewEvidence(e.target.value)}
-                    />
-                  </div>
-                </div>
-              </CardContent>
-              <div className="flex items-center justify-end gap-2 p-4 border-t">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowAddModal(false)}
-                >
-                  취소
-                </Button>
-                <Button type="submit" size="sm">
-                  등록 완료
-                </Button>
+      {/* Radix Dialog Component for Add Modal */}
+      <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>신규 사내 역량 자산 등록</DialogTitle>
+            <DialogDescription>
+              제안서 RAG 인용 및 공공기관 가점 평가에 반영될 사내 증빙 자산을 등록합니다.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleAddSubmit} className="space-y-3.5 pt-2">
+            <div>
+              <label className="block text-xs font-semibold mb-1">자산 구분 (Type)</label>
+              <select
+                className="w-full p-2 text-xs border rounded-lg bg-background"
+                value={newType}
+                onChange={(e) => setNewType(e.target.value as CapabilityType)}
+              >
+                <option value="PATENT">특허 및 지식재산권 (PATENT)</option>
+                <option value="CERTIFICATION">기업 및 기술 인증서 (CERTIFICATION)</option>
+                <option value="TECHNOLOGY">핵심 기술 및 TRL (TECHNOLOGY)</option>
+                <option value="PROJECT_HISTORY">사업 및 납품 실적 (PROJECT_HISTORY)</option>
+                <option value="FINANCIAL_PROFILE">재무제표 및 결산 (FINANCIAL_PROFILE)</option>
+                <option value="COMPANY_PROFILE">회사 일반 프로필 (COMPANY_PROFILE)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold mb-1">자산명 / 실적명 / 특허명 *</label>
+              <input
+                type="text"
+                required
+                placeholder="예: 다중 센서 융합 협동로봇 안전제어 특허"
+                className="w-full p-2 text-xs border rounded-lg bg-background"
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold mb-1">상세 설명 / 기술 사양</label>
+              <textarea
+                rows={2}
+                placeholder="공모 제안서 초안 작성 시 인용될 핵심 특징 및 스펙"
+                className="w-full p-2 text-xs border rounded-lg bg-background"
+                value={newDesc}
+                onChange={(e) => setNewDesc(e.target.value)}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-xs font-semibold mb-1">유효 만료일</label>
+                <input
+                  type="date"
+                  className="w-full p-2 text-xs border rounded-lg bg-background"
+                  value={newValidUntil}
+                  onChange={(e) => setNewValidUntil(e.target.value)}
+                />
               </div>
-            </form>
-          </Card>
-        </div>
-      )}
+              <div>
+                <label className="block text-xs font-semibold mb-1">증빙 파일명</label>
+                <input
+                  type="text"
+                  placeholder="예: 특허등록원부.pdf"
+                  className="w-full p-2 text-xs border rounded-lg bg-background"
+                  value={newEvidence}
+                  onChange={(e) => setNewEvidence(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <DialogFooter className="pt-3 border-t">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAddModal(false)}
+              >
+                취소
+              </Button>
+              <Button type="submit" size="sm">
+                등록 완료
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
