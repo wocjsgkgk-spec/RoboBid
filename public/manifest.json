@@ -1,0 +1,48 @@
+{
+  "name": "RoboBid AI — BidOps Intelligence Platform",
+  "short_name": "RoboBid AI",
+  "description": "로봇·특수목적 하드웨어 공공 공모사업 End-to-End BidOps Intelligence Platform",
+  "start_url": "/today",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#090d16",
+  "theme_color": "#2563eb",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "오늘의 공모",
+      "short_name": "오늘",
+      "description": "오늘 마감 및 검토 대상 공모 확인",
+      "url": "/today",
+      "icons": [{ "src": "/icons/icon-192.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "제안서 워크스페이스",
+      "short_name": "제안서",
+      "description": "RAG 기반 제안서 초안 및 컴플라이언스 점검",
+      "url": "/proposals",
+      "icons": [{ "src": "/icons/icon-192.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "성과·학습",
+      "short_name": "성과",
+      "description": "지원 결과 사후 분석 및 역량 격차 진단",
+      "url": "/learning",
+      "icons": [{ "src": "/icons/icon-192.svg", "sizes": "192x192" }]
+    }
+  ]
+}

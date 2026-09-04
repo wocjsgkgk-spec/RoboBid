@@ -7,7 +7,7 @@ import {
   CalendarCheck,
   Search,
   FileSpreadsheet,
-  Bot,
+  TrendingUp,
   Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -16,7 +16,7 @@ const MOBILE_NAV_ITEMS = [
   { href: "/today", label: "오늘", icon: CalendarCheck },
   { href: "/opportunities", label: "공모", icon: Search },
   { href: "/proposals", label: "제안", icon: FileSpreadsheet },
-  { href: "/ai", label: "AI", icon: Bot },
+  { href: "/learning", label: "성과", icon: TrendingUp },
   { href: "/settings", label: "설정", icon: Settings },
 ];
 
