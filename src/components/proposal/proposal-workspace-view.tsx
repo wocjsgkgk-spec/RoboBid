@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   FileText,
   Sparkles,
@@ -12,11 +12,23 @@ import {
   Clock,
   ArrowLeft,
   ShieldAlert,
+  Layers,
+  FileCheck,
+  Send,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Proposal, ProposalSection, SectionStatus } from "@/types/proposal";
+import {
+  ComplianceAuditSummary,
+  ComplianceStatus,
+  RequirementMatrixItem,
+  SubmissionChecklist,
+  SubmissionConfirmationPayload,
+} from "@/types/compliance";
+import { ComplianceMatrixView } from "@/components/compliance/compliance-matrix-view";
+import { SubmissionControlPanel } from "@/components/compliance/submission-control-panel";
 
 interface ProposalWorkspaceViewProps {
   proposal: Proposal;
@@ -34,6 +46,7 @@ export function ProposalWorkspaceView({
   onCreateVersionSnapshot,
 }: ProposalWorkspaceViewProps) {
   const sections = proposal.sections || [];
+  const [activeTab, setActiveTab] = useState<"DRAFT" | "RTM" | "SUBMISSION">("DRAFT");
   const [selectedSectionCode, setSelectedSectionCode] = useState<string>(
     sections[0]?.sectionCode || ""
   );
@@ -45,6 +58,58 @@ export function ProposalWorkspaceView({
   const [versioning, setVersioning] = useState(false);
   const [snapshotSummary, setSnapshotSummary] = useState("");
   const [showVersionModal, setShowVersionModal] = useState(false);
+
+  // Compliance & Submission States
+  const [matrix, setMatrix] = useState<RequirementMatrixItem[]>([]);
+  const [auditSummary, setAuditSummary] = useState<ComplianceAuditSummary>({
+    totalCount: 0,
+    satisfiedCount: 0,
+    partialCount: 0,
+    missingCount: 0,
+    notApplicableCount: 0,
+    reviewRequiredCount: 0,
+    mandatoryMissingCount: 0,
+    complianceRatePercent: 100,
+    canSubmit: true,
+    blockingWarnings: [],
+  });
+  const [checklist, setChecklist] = useState<SubmissionChecklist>({
+    id: "init",
+    proposalId: proposal.id,
+    allMandatorySatisfied: false,
+    documentsReady: false,
+    sealAndSignatureVerified: false,
+    formatAndSizeVerified: false,
+    submissionUrlVerified: false,
+    submitterAssigned: false,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  });
+
+  const fetchComplianceData = async () => {
+    try {
+      const [compRes, subRes] = await Promise.all([
+        fetch(`/api/proposals/${proposal.id}/compliance`),
+        fetch(`/api/proposals/${proposal.id}/submission`),
+      ]);
+      if (compRes.ok) {
+        const compData = await compRes.json();
+        setMatrix(compData.matrix || []);
+        if (compData.summary) setAuditSummary(compData.summary);
+      }
+      if (subRes.ok) {
+        const subData = await subRes.json();
+        if (subData.checklist) setChecklist(subData.checklist);
+        if (subData.auditSummary) setAuditSummary(subData.auditSummary);
+      }
+    } catch (err) {
+      console.error("Failed to fetch compliance/submission data:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchComplianceData();
+  }, [proposal.id]);
 
   const currentSection = sections.find((s) => s.sectionCode === selectedSectionCode);
 
@@ -59,6 +124,7 @@ export function ProposalWorkspaceView({
     setSaving(true);
     try {
       await onSaveSection(currentSection.sectionCode, editorContent, "EDITED");
+      await fetchComplianceData();
     } finally {
       setSaving(false);
     }
@@ -72,6 +138,7 @@ export function ProposalWorkspaceView({
       if (sec) {
         setEditorContent(sec.contentMarkdown);
       }
+      await fetchComplianceData();
     } finally {
       setGenerating(false);
     }
@@ -87,6 +154,53 @@ export function ProposalWorkspaceView({
     } finally {
       setVersioning(false);
     }
+  };
+
+  const handleUpdateMatrixStatus = async (matrixId: string, status: ComplianceStatus) => {
+    try {
+      const res = await fetch(`/api/proposals/${proposal.id}/compliance`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ matrixId, status }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setMatrix((prev) => prev.map((m) => (m.id === matrixId ? data.item : m)));
+        if (data.summary) setAuditSummary(data.summary);
+      }
+    } catch (err) {
+      console.error("Failed to update matrix status:", err);
+    }
+  };
+
+  const handleUpdateChecklist = async (updates: Partial<SubmissionChecklist>) => {
+    try {
+      const res = await fetch(`/api/proposals/${proposal.id}/submission`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setChecklist(data.checklist);
+        if (data.auditSummary) setAuditSummary(data.auditSummary);
+      }
+    } catch (err) {
+      console.error("Failed to update checklist:", err);
+    }
+  };
+
+  const handleConfirmSubmission = async (payload: SubmissionConfirmationPayload) => {
+    const res = await fetch(`/api/proposals/${proposal.id}/submission/confirm`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || "제출 확정에 실패했습니다.");
+    }
+    await fetchComplianceData();
   };
 
   // 가정 및 TODO 태그 검출
@@ -110,7 +224,7 @@ export function ProposalWorkspaceView({
               <Badge variant="outline" className="text-xs">
                 v{proposal.currentVersion}
               </Badge>
-              <Badge variant="secondary" className="text-xs">
+              <Badge variant={proposal.status === "SUBMITTED" ? "default" : "secondary"} className="text-xs">
                 {proposal.status}
               </Badge>
             </div>
@@ -121,164 +235,219 @@ export function ProposalWorkspaceView({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* View Switcher Tabs */}
+        <div className="flex items-center gap-1.5 bg-muted/60 p-1 rounded-lg">
           <Button
-            variant="outline"
+            variant={activeTab === "DRAFT" ? "default" : "ghost"}
             size="sm"
-            onClick={() => setShowVersionModal(true)}
-            className="gap-1.5 text-xs"
+            onClick={() => setActiveTab("DRAFT")}
+            className="text-xs gap-1.5 h-8"
           >
-            <History className="h-3.5 w-3.5" />
-            <span>버전 저장 (v{proposal.currentVersion})</span>
+            <FileText className="h-3.5 w-3.5" />
+            <span>제안서 에디터</span>
           </Button>
           <Button
-            variant="outline"
+            variant={activeTab === "RTM" ? "default" : "ghost"}
             size="sm"
-            onClick={handleGenerate}
-            disabled={generating}
-            className="gap-1.5 text-xs"
+            onClick={() => setActiveTab("RTM")}
+            className="text-xs gap-1.5 h-8"
           >
-            <Sparkles className={`h-3.5 w-3.5 ${generating ? "animate-spin" : "text-primary"}`} />
-            <span>{generating ? "AI 초안 생성 중..." : "AI 초안 생성 (70~80%)"}</span>
+            <Layers className="h-3.5 w-3.5" />
+            <span>RTM 컴플라이언스</span>
+            {auditSummary.mandatoryMissingCount > 0 && (
+              <span className="h-2 w-2 rounded-full bg-destructive" />
+            )}
           </Button>
           <Button
+            variant={activeTab === "SUBMISSION" ? "default" : "ghost"}
             size="sm"
-            onClick={handleSave}
-            disabled={saving}
-            className="gap-1.5 text-xs"
+            onClick={() => setActiveTab("SUBMISSION")}
+            className="text-xs gap-1.5 h-8"
           >
-            <Save className="h-3.5 w-3.5" />
-            <span>{saving ? "저장 중..." : "섹션 저장"}</span>
+            <Send className="h-3.5 w-3.5" />
+            <span>제출 관리 & Checklist</span>
           </Button>
         </div>
       </div>
 
-      {/* 2. Three Columns Workspace Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {/* Left 3 Cols: Table of Contents (TOC) */}
-        <div className="lg:col-span-3 space-y-2">
-          <Card className="h-full">
-            <CardHeader className="p-3 pb-2 border-b">
-              <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                표준 제안서 목차 (TOC)
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-2 space-y-1">
-              {sections.map((sec) => (
-                <button
-                  key={sec.sectionCode}
-                  onClick={() => handleSelectSection(sec.sectionCode)}
-                  className={`w-full text-left p-2 rounded-md text-xs transition-colors flex items-center justify-between ${
-                    selectedSectionCode === sec.sectionCode
-                      ? "bg-primary text-primary-foreground font-medium"
-                      : "hover:bg-muted text-foreground"
-                  }`}
-                >
-                  <span className="truncate max-w-[180px]">{sec.title}</span>
-                  <Badge
-                    variant={selectedSectionCode === sec.sectionCode ? "secondary" : "outline"}
-                    className="text-[10px] scale-90"
-                  >
-                    {sec.status}
-                  </Badge>
-                </button>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
+      {/* 2. Tab Content Rendering */}
+      {activeTab === "RTM" ? (
+        <ComplianceMatrixView
+          matrix={matrix}
+          summary={auditSummary}
+          onUpdateStatus={handleUpdateMatrixStatus}
+          onRefresh={fetchComplianceData}
+        />
+      ) : activeTab === "SUBMISSION" ? (
+        <SubmissionControlPanel
+          proposal={proposal}
+          checklist={checklist}
+          summary={auditSummary}
+          onUpdateChecklist={handleUpdateChecklist}
+          onConfirmSubmission={handleConfirmSubmission}
+        />
+      ) : (
+        /* DRAFT View */
+        <div className="space-y-4">
+          {/* Action Bar for Editor */}
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowVersionModal(true)}
+              className="gap-1.5 text-xs"
+            >
+              <History className="h-3.5 w-3.5" />
+              <span>버전 저장 (v{proposal.currentVersion})</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleGenerate}
+              disabled={generating}
+              className="gap-1.5 text-xs"
+            >
+              <Sparkles className={`h-3.5 w-3.5 ${generating ? "animate-spin" : "text-primary"}`} />
+              <span>{generating ? "AI 초안 생성 중..." : "AI 초안 생성 (70~80%)"}</span>
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleSave}
+              disabled={saving}
+              className="gap-1.5 text-xs"
+            >
+              <Save className="h-3.5 w-3.5" />
+              <span>{saving ? "저장 중..." : "섹션 저장"}</span>
+            </Button>
+          </div>
 
-        {/* Center 6 Cols: Markdown Editor & Document Assembly */}
-        <div className="lg:col-span-6 space-y-3">
-          {/* Tag Alerts Banner */}
-          {(hasAssumptions || hasTodos) && (
-            <div className="p-3 rounded-md bg-amber-500/10 border border-amber-500/30 text-xs space-y-1">
-              <div className="font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
-                <AlertCircle className="h-4 w-4" />
-                <span>검토 필요 항목 안내 (Strict Evidence Gate)</span>
-              </div>
-              <div className="text-muted-foreground text-[11px] space-y-0.5 pl-5">
-                {hasAssumptions && (
-                  <div>• <code>[가정: ...]</code>: 확정되지 않은 추정치가 포함되어 있습니다. 담당 부서 확인 후 수정 요망</div>
-                )}
-                {hasTodos && (
-                  <div>• <code>[TODO: ...]</code>: 사내 미등록 자산 또는 사업책임자 확인이 필요한 항목입니다.</div>
-                )}
-              </div>
-            </div>
-          )}
-
-          <Card className="flex flex-col h-[650px]">
-            <CardHeader className="p-3 pb-2 border-b flex flex-row items-center justify-between">
-              <div>
-                <CardTitle className="text-sm font-semibold">
-                  {currentSection?.title || "섹션을 선택하세요"}
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  Evidence Citation 기반 실데이터 연계 (Zero Hallucinated Numbers)
-                </CardDescription>
-              </div>
-              <Badge variant="outline" className="text-xs">
-                v{currentSection?.version || 1}
-              </Badge>
-            </CardHeader>
-            <CardContent className="p-3 flex-1 flex flex-col">
-              <textarea
-                value={editorContent}
-                onChange={(e) => setEditorContent(e.target.value)}
-                placeholder="RAG 초안을 생성하거나 직접 제안서 내용을 작성하세요..."
-                className="w-full flex-1 p-3 font-mono text-xs bg-background rounded-md border resize-none focus:outline-none focus:ring-1 focus:ring-primary leading-relaxed"
-              />
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Right 3 Cols: Evidence Citations & RFP Traceability */}
-        <div className="lg:col-span-3 space-y-3">
-          <Card className="h-full">
-            <CardHeader className="p-3 pb-2 border-b">
-              <div className="flex items-center gap-1.5">
-                <Link2 className="h-4 w-4 text-primary" />
-                <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  증빙 인용 (Evidence Citations)
-                </CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent className="p-3 space-y-3 max-h-[600px] overflow-y-auto">
-              {currentSection && currentSection.evidenceCitations.length > 0 ? (
-                currentSection.evidenceCitations.map((cite) => (
-                  <div
-                    key={cite.id}
-                    className="p-2.5 rounded-md border text-xs space-y-1.5 bg-muted/20"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold text-primary truncate max-w-[170px]">
-                        {cite.sourceTitle}
-                      </span>
-                      <Badge variant="outline" className="text-[9px]">
-                        {cite.sourceType}
+          {/* Three Columns Workspace Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+            {/* Left 3 Cols: TOC */}
+            <div className="lg:col-span-3 space-y-2">
+              <Card className="h-full">
+                <CardHeader className="p-3 pb-2 border-b">
+                  <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    표준 제안서 목차 (TOC)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-2 space-y-1">
+                  {sections.map((sec) => (
+                    <button
+                      key={sec.sectionCode}
+                      onClick={() => handleSelectSection(sec.sectionCode)}
+                      className={`w-full text-left p-2 rounded-md text-xs transition-colors flex items-center justify-between ${
+                        selectedSectionCode === sec.sectionCode
+                          ? "bg-primary text-primary-foreground font-medium"
+                          : "hover:bg-muted text-foreground"
+                      }`}
+                    >
+                      <span className="truncate max-w-[180px]">{sec.title}</span>
+                      <Badge
+                        variant={selectedSectionCode === sec.sectionCode ? "secondary" : "outline"}
+                        className="text-[10px] scale-90"
+                      >
+                        {sec.status}
                       </Badge>
-                    </div>
-                    <p className="text-[11px] text-muted-foreground italic border-l-2 pl-2 border-primary/40 line-clamp-3">
-                      "{cite.quoteSnippet}"
-                    </p>
-                    <div className="text-[10px] text-muted-foreground">
-                      매칭: {cite.relevanceReason}
-                    </div>
+                    </button>
+                  ))}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Center 6 Cols: Editor */}
+            <div className="lg:col-span-6 space-y-3">
+              {(hasAssumptions || hasTodos) && (
+                <div className="p-3 rounded-md bg-amber-500/10 border border-amber-500/30 text-xs space-y-1">
+                  <div className="font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
+                    <AlertCircle className="h-4 w-4" />
+                    <span>검토 필요 항목 안내 (Strict Evidence Gate)</span>
                   </div>
-                ))
-              ) : (
-                <div className="p-4 text-center text-xs text-muted-foreground space-y-2">
-                  <ShieldAlert className="h-6 w-6 mx-auto opacity-50 text-muted-foreground" />
-                  <p>이 섹션에 바인딩된 사내 증빙 또는 RFP 요건 인용구가 없습니다.</p>
-                  <p className="text-[11px] text-muted-foreground/80">
-                    'AI 초안 생성'을 실행하면 Capability Vault와 RFP 요건이 자동 바인딩됩니다.
-                  </p>
+                  <div className="text-muted-foreground text-[11px] space-y-0.5 pl-5">
+                    {hasAssumptions && (
+                      <div>• <code>[가정: ...]</code>: 확정되지 않은 추정치 포함. 담당 부서 확인 후 수정 요망</div>
+                    )}
+                    {hasTodos && (
+                      <div>• <code>[TODO: ...]</code>: 사내 미등록 자산 또는 사업책임자 확인 필요</div>
+                    )}
+                  </div>
                 </div>
               )}
-            </CardContent>
-          </Card>
+
+              <Card className="flex flex-col h-[650px]">
+                <CardHeader className="p-3 pb-2 border-b flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle className="text-sm font-semibold">
+                      {currentSection?.title || "섹션을 선택하세요"}
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      Evidence Citation 기반 실데이터 연계 (Zero Hallucinated Numbers)
+                    </CardDescription>
+                  </div>
+                  <Badge variant="outline" className="text-xs">
+                    v{currentSection?.version || 1}
+                  </Badge>
+                </CardHeader>
+                <CardContent className="p-3 flex-1 flex flex-col">
+                  <textarea
+                    value={editorContent}
+                    onChange={(e) => setEditorContent(e.target.value)}
+                    placeholder="RAG 초안을 생성하거나 직접 제안서 내용을 작성하세요..."
+                    className="w-full flex-1 p-3 font-mono text-xs bg-background rounded-md border resize-none focus:outline-none focus:ring-1 focus:ring-primary leading-relaxed"
+                  />
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Right 3 Cols: Evidence Citations */}
+            <div className="lg:col-span-3 space-y-3">
+              <Card className="h-full">
+                <CardHeader className="p-3 pb-2 border-b">
+                  <div className="flex items-center gap-1.5">
+                    <Link2 className="h-4 w-4 text-primary" />
+                    <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      증빙 인용 (Evidence Citations)
+                    </CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-3 space-y-3 max-h-[600px] overflow-y-auto">
+                  {currentSection && currentSection.evidenceCitations.length > 0 ? (
+                    currentSection.evidenceCitations.map((cite) => (
+                      <div
+                        key={cite.id}
+                        className="p-2.5 rounded-md border text-xs space-y-1.5 bg-muted/20"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-primary truncate max-w-[170px]">
+                            {cite.sourceTitle}
+                          </span>
+                          <Badge variant="outline" className="text-[9px]">
+                            {cite.sourceType}
+                          </Badge>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground italic border-l-2 pl-2 border-primary/40 line-clamp-3">
+                          "{cite.quoteSnippet}"
+                        </p>
+                        <div className="text-[10px] text-muted-foreground">
+                          매칭: {cite.relevanceReason}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-4 text-center text-xs text-muted-foreground space-y-2">
+                      <ShieldAlert className="h-6 w-6 mx-auto opacity-50 text-muted-foreground" />
+                      <p>이 섹션에 바인딩된 사내 증빙 또는 RFP 요건 인용구가 없습니다.</p>
+                      <p className="text-[11px] text-muted-foreground/80">
+                        'AI 초안 생성'을 실행하면 Capability Vault와 RFP 요건이 자동 바인딩됩니다.
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Version Snapshot Modal */}
       {showVersionModal && (

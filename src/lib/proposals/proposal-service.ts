@@ -235,6 +235,17 @@ export class ProposalService {
   }
 
   /**
+   * 제안서 상태 업데이트
+   */
+  public updateProposalStatus(proposalId: string, status: ProposalStatus): void {
+    const proposal = this.memoryProposals.get(proposalId);
+    if (proposal) {
+      proposal.status = status;
+      proposal.updatedAt = new Date().toISOString();
+    }
+  }
+
+  /**
    * 메모리 초기화 (테스트용)
    */
   public clearMemory(): void {
