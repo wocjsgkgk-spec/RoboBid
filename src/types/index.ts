@@ -160,3 +160,5 @@ export type AuditEvent = z.infer<typeof AuditEventSchema>;
 export * from "./document";
 export * from "./capability";
 export * from "./eligibility";
+export * from "./scoring";
+export * from "./decision";
