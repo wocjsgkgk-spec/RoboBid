@@ -164,3 +164,4 @@ export * from "./scoring";
 export * from "./decision";
 export * from "./proposal";
 export * from "./compliance";
+export * from "./outcome";
