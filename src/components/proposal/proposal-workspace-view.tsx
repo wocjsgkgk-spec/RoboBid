@@ -15,6 +15,7 @@ import {
   Layers,
   FileCheck,
   Send,
+  Users2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,7 @@ import {
 } from "@/types/compliance";
 import { ComplianceMatrixView } from "@/components/compliance/compliance-matrix-view";
 import { SubmissionControlPanel } from "@/components/compliance/submission-control-panel";
+import { CrossReviewPanel } from "@/components/proposal/cross-review-panel";
 
 interface ProposalWorkspaceViewProps {
   proposal: Proposal;
@@ -46,7 +48,7 @@ export function ProposalWorkspaceView({
   onCreateVersionSnapshot,
 }: ProposalWorkspaceViewProps) {
   const sections = proposal.sections || [];
-  const [activeTab, setActiveTab] = useState<"DRAFT" | "RTM" | "SUBMISSION">("DRAFT");
+  const [activeTab, setActiveTab] = useState<"DRAFT" | "RTM" | "SUBMISSION" | "CROSS_REVIEW">("DRAFT");
   const [selectedSectionCode, setSelectedSectionCode] = useState<string>(
     sections[0]?.sectionCode || ""
   );
@@ -259,6 +261,15 @@ export function ProposalWorkspaceView({
             )}
           </Button>
           <Button
+            variant={activeTab === "CROSS_REVIEW" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setActiveTab("CROSS_REVIEW")}
+            className="text-xs gap-1.5 h-8"
+          >
+            <Users2 className="h-3.5 w-3.5" />
+            <span>전문가 교차 검토</span>
+          </Button>
+          <Button
             variant={activeTab === "SUBMISSION" ? "default" : "ghost"}
             size="sm"
             onClick={() => setActiveTab("SUBMISSION")}
@@ -271,7 +282,9 @@ export function ProposalWorkspaceView({
       </div>
 
       {/* 2. Tab Content Rendering */}
-      {activeTab === "RTM" ? (
+      {activeTab === "CROSS_REVIEW" ? (
+        <CrossReviewPanel proposalId={proposal.id} />
+      ) : activeTab === "RTM" ? (
         <ComplianceMatrixView
           matrix={matrix}
           summary={auditSummary}

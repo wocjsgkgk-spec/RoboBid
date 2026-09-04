@@ -26,6 +26,8 @@ export default function IntelligencePage() {
   const [selectedTab, setSelectedTab] = useState("ALL");
   const [isLoading, setIsLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [readiness, setReadiness] = useState<any>(null);
+  const [projectsCount, setProjectsCount] = useState<number>(0);
 
   // Form State
   const [newType, setNewType] = useState<CapabilityType>("COMPANY_PROFILE");
@@ -40,6 +42,20 @@ export default function IntelligencePage() {
       const res = await fetch(url);
       const data = await res.json();
       setCapabilities(data.capabilities || []);
+
+      // Fetch readiness & projects
+      const [readinessRes, projectsRes] = await Promise.all([
+        fetch("/api/readiness"),
+        fetch("/api/projects"),
+      ]);
+      if (readinessRes.ok) {
+        const rData = await readinessRes.json();
+        setReadiness(rData.readiness);
+      }
+      if (projectsRes.ok) {
+        const pData = await projectsRes.json();
+        setProjectsCount((pData.projects || []).length);
+      }
     } catch {
       // Fallback
     } finally {
@@ -104,6 +120,59 @@ export default function IntelligencePage() {
             <span>
               유효기간이 만료되었거나 30일 이내 만료 예정인 인증/자료가 존재합니다. 갱신 서류를 준비해 주세요.
             </span>
+          </div>
+        </div>
+      )}
+
+      {/* Phase 11 Readiness Gate & Post-Award Status */}
+      {readiness && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="md:col-span-2 p-4 border rounded-xl bg-card shadow-sm space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Database className="w-5 h-5 text-primary" />
+                <h3 className="font-bold text-sm">머신러닝 예측 모델 도입 준비도 (Readiness Gate)</h3>
+              </div>
+              <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                readiness.winProbabilityModelDecision === 'GO'
+                  ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
+                  : 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
+              }`}>
+                {readiness.winProbabilityModelDecision === 'GO' ? '모델 학습 가능 (GO)' : '데이터 축적 지속 (NO-GO)'}
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              {readiness.decisionReason}
+            </p>
+            <div className="grid grid-cols-4 gap-2 pt-2 border-t text-xs">
+              <div>
+                <span className="text-muted-foreground block text-[11px]">검증 레이블 표본</span>
+                <span className="font-bold">{readiness.labeledOutcomeCount}건</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground block text-[11px]">클래스 밸런스</span>
+                <span className="font-bold">{readiness.classBalanceRatio}</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground block text-[11px]">결측률</span>
+                <span className="font-bold">{readiness.missingDataRate}%</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground block text-[11px]">Provider 커버리지</span>
+                <span className="font-bold">{readiness.providerCoverageRate}%</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-4 border rounded-xl bg-card shadow-sm space-y-2">
+            <h3 className="font-bold text-sm flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+              선정 후 사업화 (Post-Award)
+            </h3>
+            <div className="text-2xl font-bold">{projectsCount}개</div>
+            <p className="text-xs text-muted-foreground">
+              최종 선정 공모의 실행 프로젝트 전환 및 4단계 WBS 마일스톤이 관리되고 있습니다.
+            </p>
           </div>
         </div>
       )}
