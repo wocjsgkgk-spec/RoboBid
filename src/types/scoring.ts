@@ -44,3 +44,5 @@ export interface OpportunityScoreResult {
   rationale: string;
   calculatedAt: string;
 }
+
+export type OpportunityScore = OpportunityScoreResult;

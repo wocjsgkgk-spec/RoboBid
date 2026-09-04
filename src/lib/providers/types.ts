@@ -7,6 +7,15 @@ export interface ProviderHealthCheckResult {
   lastCheckedAt: string;
 }
 
+export interface ProviderHealth {
+  providerId: string;
+  providerName: string;
+  status: ProviderStatus;
+  latencyMs?: number;
+  lastCheckedAt: string;
+  error?: string;
+}
+
 export interface RawAttachment {
   fileName: string;
   fileUrl?: string;

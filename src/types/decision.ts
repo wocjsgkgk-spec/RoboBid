@@ -21,3 +21,5 @@ export interface BidDecision {
   evidenceSnapshot?: Record<string, any>;
   createdAt: string;
 }
+
+export type DecisionRecord = BidDecision;
