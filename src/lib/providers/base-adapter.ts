@@ -19,6 +19,22 @@ export abstract class BaseProviderAdapter implements ProviderAdapter {
   abstract normalize(rawItem: any): NormalizedOpportunityPayload;
 
   /**
+   * Safely encodes a public data portal API key avoiding double-encoding.
+   * Public data portal keys may be provided as decoded or pre-encoded strings.
+   */
+  public safeEncodeServiceKey(key: string): string {
+    if (!key) return "";
+    try {
+      // Decode first in case the user pasted an already URL-encoded key
+      const decoded = decodeURIComponent(key);
+      return encodeURIComponent(decoded);
+    } catch {
+      // If decoding fails, fallback to direct encodeURIComponent
+      return encodeURIComponent(key);
+    }
+  }
+
+  /**
    * Generates a deterministic SHA-256 content hash for change detection & deduplication.
    */
   public generateContentHash(data: Record<string, any>): string {

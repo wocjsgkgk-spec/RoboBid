@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { proposalService } from '@/lib/proposals/proposal-service';
+import { vaultStore } from '@/lib/vault/vault-store';
 import { CapabilityRecord, Opportunity, RequirementCandidate } from '@/types';
 
 export async function POST(
@@ -17,10 +18,15 @@ export async function POST(
       );
     }
 
+    const caps =
+      capabilities && capabilities.length > 0
+        ? (capabilities as CapabilityRecord[])
+        : vaultStore.getAll();
+
     const sections = proposalService.generateDraft(
       params.id,
       opportunity as Opportunity,
-      (capabilities || []) as CapabilityRecord[],
+      caps,
       (requirements || []) as RequirementCandidate[],
       sectionCode
     );

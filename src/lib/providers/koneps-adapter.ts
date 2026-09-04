@@ -33,7 +33,7 @@ export class KonepsAdapter extends BaseProviderAdapter {
     try {
       const startTime = Date.now();
       // Test ping to open data endpoint with 1 row limit
-      const endpoint = `http://apis.data.go.kr/1230000/PubDataOpnStdBidPblancInfo/getDataSetOpnStdBidPblancInfo?serviceKey=${encodeURIComponent(
+      const endpoint = `http://apis.data.go.kr/1230000/PubDataOpnStdBidPblancInfo/getDataSetOpnStdBidPblancInfo?serviceKey=${this.safeEncodeServiceKey(
         key
       )}&numOfRows=1&pageNo=1&type=json`;
 
@@ -98,7 +98,7 @@ export class KonepsAdapter extends BaseProviderAdapter {
     const numOfRows = options.numOfRows || 20;
     const keyword = options.keyword || "로봇";
 
-    const endpoint = `http://apis.data.go.kr/1230000/PubDataOpnStdBidPblancInfo/getDataSetOpnStdBidPblancInfo?serviceKey=${encodeURIComponent(
+    const endpoint = `http://apis.data.go.kr/1230000/PubDataOpnStdBidPblancInfo/getDataSetOpnStdBidPblancInfo?serviceKey=${this.safeEncodeServiceKey(
       key
     )}&pageNo=${pageNo}&numOfRows=${numOfRows}&type=json&bidNtceNm=${encodeURIComponent(keyword)}`;
 

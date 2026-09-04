@@ -31,7 +31,7 @@ export class KStartupAdapter extends BaseProviderAdapter {
 
     try {
       const startTime = Date.now();
-      const endpoint = `http://apis.data.go.kr/B552735/k-startup-service/getAnnouncementInformation01?serviceKey=${encodeURIComponent(
+      const endpoint = `http://apis.data.go.kr/B552735/k-startup-service/getAnnouncementInformation01?serviceKey=${this.safeEncodeServiceKey(
         key
       )}&numOfRows=1&pageNo=1&returnType=json`;
 
@@ -85,7 +85,7 @@ export class KStartupAdapter extends BaseProviderAdapter {
     const pageNo = options.pageNo || 1;
     const numOfRows = options.numOfRows || 20;
 
-    const endpoint = `http://apis.data.go.kr/B552735/k-startup-service/getAnnouncementInformation01?serviceKey=${encodeURIComponent(
+    const endpoint = `http://apis.data.go.kr/B552735/k-startup-service/getAnnouncementInformation01?serviceKey=${this.safeEncodeServiceKey(
       key
     )}&pageNo=${pageNo}&numOfRows=${numOfRows}&returnType=json`;
 

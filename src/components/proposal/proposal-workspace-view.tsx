@@ -16,6 +16,7 @@ import {
   FileCheck,
   Send,
   Users2,
+  Landmark,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,7 @@ import {
 import { ComplianceMatrixView } from "@/components/compliance/compliance-matrix-view";
 import { SubmissionControlPanel } from "@/components/compliance/submission-control-panel";
 import { CrossReviewPanel } from "@/components/proposal/cross-review-panel";
+import { AgencyTemplatePanel } from "@/components/proposal/agency-template-panel";
 
 interface ProposalWorkspaceViewProps {
   proposal: Proposal;
@@ -48,7 +50,7 @@ export function ProposalWorkspaceView({
   onCreateVersionSnapshot,
 }: ProposalWorkspaceViewProps) {
   const sections = proposal.sections || [];
-  const [activeTab, setActiveTab] = useState<"DRAFT" | "RTM" | "SUBMISSION" | "CROSS_REVIEW">("DRAFT");
+  const [activeTab, setActiveTab] = useState<"DRAFT" | "RTM" | "SUBMISSION" | "CROSS_REVIEW" | "AGENCY_TEMPLATE">("DRAFT");
   const [selectedSectionCode, setSelectedSectionCode] = useState<string>(
     sections[0]?.sectionCode || ""
   );
@@ -270,6 +272,15 @@ export function ProposalWorkspaceView({
             <span>전문가 교차 검토</span>
           </Button>
           <Button
+            variant={activeTab === "AGENCY_TEMPLATE" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setActiveTab("AGENCY_TEMPLATE")}
+            className="text-xs gap-1.5 h-8"
+          >
+            <Landmark className="h-3.5 w-3.5" />
+            <span>기관 서식 & 가점 평가</span>
+          </Button>
+          <Button
             variant={activeTab === "SUBMISSION" ? "default" : "ghost"}
             size="sm"
             onClick={() => setActiveTab("SUBMISSION")}
@@ -284,6 +295,8 @@ export function ProposalWorkspaceView({
       {/* 2. Tab Content Rendering */}
       {activeTab === "CROSS_REVIEW" ? (
         <CrossReviewPanel proposalId={proposal.id} />
+      ) : activeTab === "AGENCY_TEMPLATE" ? (
+        <AgencyTemplatePanel proposalTitle={proposal.title} />
       ) : activeTab === "RTM" ? (
         <ComplianceMatrixView
           matrix={matrix}

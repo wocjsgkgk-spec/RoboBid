@@ -31,7 +31,7 @@ export class BizinfoAdapter extends BaseProviderAdapter {
 
     try {
       const startTime = Date.now();
-      const endpoint = `https://www.bizinfo.go.kr/uss/openapi/openApi.do?crtfcKey=${encodeURIComponent(
+      const endpoint = `https://www.bizinfo.go.kr/uss/openapi/openApi.do?crtfcKey=${this.safeEncodeServiceKey(
         key
       )}&dataType=json&display=1&pageIndex=1`;
 
@@ -85,7 +85,7 @@ export class BizinfoAdapter extends BaseProviderAdapter {
     const pageNo = options.pageNo || 1;
     const numOfRows = options.numOfRows || 20;
 
-    const endpoint = `https://www.bizinfo.go.kr/uss/openapi/openApi.do?crtfcKey=${encodeURIComponent(
+    const endpoint = `https://www.bizinfo.go.kr/uss/openapi/openApi.do?crtfcKey=${this.safeEncodeServiceKey(
       key
     )}&dataType=json&display=${numOfRows}&pageIndex=${pageNo}`;
 

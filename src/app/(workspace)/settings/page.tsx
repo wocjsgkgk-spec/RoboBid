@@ -125,6 +125,21 @@ export default function SettingsPage() {
         </div>
       )}
 
+      {/* Quick Setup Guidance */}
+      <Card className="bg-primary/5 border-primary/20">
+        <CardContent className="p-4 space-y-2">
+          <div className="flex items-center gap-2">
+            <Shield className="h-4 w-4 text-primary" />
+            <span className="text-xs font-bold text-foreground">
+              로컬 환경 공공데이터 API 키 설정 가이드 (.env.local)
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            루트 디렉토리의 <code className="bg-muted px-1 py-0.5 rounded font-mono text-[11px]">.env.local</code> 파일에 발급받으신 공공데이터포털 일반 인증키를 등록하시면 조달청, K-Startup, 중기부 공모 실시간 수집 및 헬스체크가 즉시 <Badge variant="success" className="text-[10px] py-0">CONNECTED</Badge>로 활성화됩니다. 터미널에서는 <code className="bg-muted px-1 py-0.5 rounded font-mono text-[11px]">npm run check:providers</code> 명령어로 실시간 통신을 점검할 수 있습니다.
+          </p>
+        </CardContent>
+      </Card>
+
       {/* Provider Health Matrix */}
       <Card>
         <CardHeader>

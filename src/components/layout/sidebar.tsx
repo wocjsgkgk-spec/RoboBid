@@ -8,6 +8,7 @@ import {
   Search,
   FileSpreadsheet,
   Database,
+  Award,
   TrendingUp,
   Bot,
   Bell,
@@ -20,6 +21,7 @@ const PRIMARY_NAV_ITEMS = [
   { href: "/today", label: "오늘", icon: CalendarCheck },
   { href: "/opportunities", label: "공모", icon: Search },
   { href: "/proposals", label: "제안", icon: FileSpreadsheet },
+  { href: "/vault", label: "역량 금고 (Vault)", icon: Award },
   { href: "/intelligence", label: "자료·인텔리전스", icon: Database },
   { href: "/learning", label: "성과·학습", icon: TrendingUp },
 ];
