@@ -32,13 +32,25 @@ export class KonepsAdapter extends BaseProviderAdapter {
 
     try {
       const startTime = Date.now();
-      // Test ping to open data endpoint with 1 row limit
-      const endpoint = `http://apis.data.go.kr/1230000/PubDataOpnStdBidPblancInfo/getDataSetOpnStdBidPblancInfo?serviceKey=${this.safeEncodeServiceKey(
+      const nowDt = new Date();
+      const yyyy = nowDt.getFullYear();
+      const mm = String(nowDt.getMonth() + 1).padStart(2, "0");
+      const dd = String(nowDt.getDate()).padStart(2, "0");
+      const todayStr = `${yyyy}${mm}${dd}`;
+
+      const prev = new Date(Date.now() - 7 * 86400000);
+      const pYyyy = prev.getFullYear();
+      const pMm = String(prev.getMonth() + 1).padStart(2, "0");
+      const pDd = String(prev.getDate()).padStart(2, "0");
+      const prevStr = `${pYyyy}${pMm}${pDd}`;
+
+      // Call active KONEPS BidPublicInfoService PPSSrch endpoint
+      const endpoint = `https://apis.data.go.kr/1230000/ad/BidPublicInfoService/getBidPblancListInfoServcPPSSrch?serviceKey=${this.safeEncodeServiceKey(
         key
-      )}&numOfRows=1&pageNo=1&type=json`;
+      )}&numOfRows=1&pageNo=1&inqryDiv=1&inqryBgnDt=${prevStr}0000&inqryEndDt=${todayStr}2359&type=json`;
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const timeoutId = setTimeout(() => controller.abort(), 7000);
 
       const res = await fetch(endpoint, { signal: controller.signal });
       clearTimeout(timeoutId);
@@ -67,10 +79,10 @@ export class KonepsAdapter extends BaseProviderAdapter {
                          data?.response?.header?.resultMsg;
         const reasonCode = data?.OpenAPI_ServiceResponse?.cmmMsgHeader?.returnReasonCode;
 
-        if (reasonCode === "12" || resText.includes("NO_OPENAPI_SERVICE_ERROR") || resText.includes("오픈API 서비스가 없거나")) {
+        if (reasonCode === "12" || resText.includes("NO_OPENAPI_SERVICE_ERROR")) {
           return {
             status: "FAILED",
-            message: "공공데이터포털(data.go.kr)에서 '조달청 나라장터 입찰공고' 오픈API 활용신청 및 승인 상태 확인이 필요합니다 (오류 12: 서비스 미신청 또는 키 불일치).",
+            message: "공공데이터포털(data.go.kr)에서 '조달청_나라장터 입찰공고정보서비스' 활용신청 상태를 확인하세요 (오류 12: 서비스 미신청).",
             latencyMs,
             lastCheckedAt: now,
           };
@@ -93,10 +105,19 @@ export class KonepsAdapter extends BaseProviderAdapter {
         };
       }
 
-      if (!data || data.response?.header?.resultCode !== "00") {
+      if (data?.response?.header?.resultCode === "00") {
+        return {
+          status: "CONNECTED",
+          message: "조달청 나라장터(KONEPS) 실시간 입찰공고 API 정상 통신 확인",
+          latencyMs,
+          lastCheckedAt: now,
+        };
+      }
+
+      if (data?.response?.header?.resultMsg) {
         return {
           status: "DEGRADED",
-          message: data?.response?.header?.resultMsg || "응답 스키마 불일치",
+          message: data.response.header.resultMsg,
           latencyMs,
           lastCheckedAt: now,
         };
@@ -104,14 +125,14 @@ export class KonepsAdapter extends BaseProviderAdapter {
 
       return {
         status: "CONNECTED",
-        message: "나라장터 공공데이터 API 정상 응답 확인",
+        message: "조달청 나라장터 공공데이터 API 정상 응답 확인",
         latencyMs,
         lastCheckedAt: now,
       };
     } catch (err: any) {
       return {
         status: "FAILED",
-        message: err.name === "AbortError" ? "API 요청 타임아웃 (5초 초과)" : err.message,
+        message: err.name === "AbortError" ? "API 요청 타임아웃 (7초 초과)" : err.message,
         lastCheckedAt: now,
       };
     }
@@ -137,9 +158,23 @@ export class KonepsAdapter extends BaseProviderAdapter {
     }
 
     try {
-      const endpoint = `https://apis.data.go.kr/1230000/PubDataOpnStdBidPblancInfo/getDataSetOpnStdBidPblancInfo?serviceKey=${this.safeEncodeServiceKey(
+      const nowDt = new Date();
+      const yyyy = nowDt.getFullYear();
+      const mm = String(nowDt.getMonth() + 1).padStart(2, "0");
+      const dd = String(nowDt.getDate()).padStart(2, "0");
+      const todayStr = `${yyyy}${mm}${dd}`;
+
+      const prev = new Date(Date.now() - 30 * 86400000);
+      const pYyyy = prev.getFullYear();
+      const pMm = String(prev.getMonth() + 1).padStart(2, "0");
+      const pDd = String(prev.getDate()).padStart(2, "0");
+      const prevStr = `${pYyyy}${pMm}${pDd}`;
+
+      const endpoint = `https://apis.data.go.kr/1230000/ad/BidPublicInfoService/getBidPblancListInfoServcPPSSrch?serviceKey=${this.safeEncodeServiceKey(
         key
-      )}&pageNo=${pageNo}&numOfRows=${numOfRows}&type=json&bidNtceNm=${encodeURIComponent(keyword)}`;
+      )}&pageNo=${pageNo}&numOfRows=${numOfRows}&inqryDiv=1&inqryBgnDt=${prevStr}0000&inqryEndDt=${todayStr}2359&type=json&bidNtceNm=${encodeURIComponent(
+        keyword
+      )}`;
 
       const res = await fetch(endpoint);
       if (!res.ok) {
