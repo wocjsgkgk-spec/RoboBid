@@ -39,17 +39,17 @@ interface NavItem {
 
 // 1. 운영 (Operations)
 const OPERATIONS_ITEMS: NavItem[] = [
-  { href: "/today", label: "오늘 & Action Center", icon: CalendarCheck, badge: "긴급 2" },
+  { href: "/today", label: "오늘 & Action Center", icon: CalendarCheck },
   { href: "/opportunities", label: "공모 탐색 & 360°", icon: Search },
-  { href: "/pipeline", label: "수주 파이프라인 (Bid Room)", icon: GitPullRequest, badge: "GO 3" },
-  { href: "/tasks", label: "과업 & 업무 협업", icon: CheckSquare, badge: "5" },
+  { href: "/pipeline", label: "수주 파이프라인 (Bid Room)", icon: GitPullRequest },
+  { href: "/tasks", label: "과업 & 업무 협업", icon: CheckSquare },
 ];
 
 // 2. 분석·제안 (Analysis & Proposals)
 const PROPOSAL_ITEMS: NavItem[] = [
   { href: "/rfp", label: "RFP & Compliance", icon: FileText },
-  { href: "/proposals", label: "제안서 & Quality Gate", icon: FileSpreadsheet, badge: "작성중" },
-  { href: "/submissions", label: "제출·마감 점검", icon: Send, badge: "D-2" },
+  { href: "/proposals", label: "제안서 & Quality Gate", icon: FileSpreadsheet },
+  { href: "/submissions", label: "제출·마감 점검", icon: Send },
 ];
 
 // 3. 지식·자산 (Knowledge & Assets)

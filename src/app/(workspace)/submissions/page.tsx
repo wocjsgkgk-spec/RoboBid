@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import {
   Send,
   CheckCircle2,
@@ -15,6 +16,7 @@ import {
   ArrowRight,
   Lock,
   ShieldAlert,
+  Inbox,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,12 +38,12 @@ interface SubmissionCheckItem {
 const DEFAULT_CHECKLIST: SubmissionCheckItem[] = [
   {
     id: "sub-01",
-    name: "제안서 본문 최종본 (PDF 변환 및 페이지 번호 검증)",
+    name: "제안서 본문 최종본 (PDF 변환 및 목차/페이지 확인)",
     category: "PROPOSAL",
     isMandatory: true,
-    isReady: true,
-    detail: "9개 챕터 85페이지, 4대 전문가 AI 크로스 리뷰 반영 완료",
-    assignee: "이책임 (로봇연구소)",
+    isReady: false,
+    detail: "RFP 규격 및 제출 서식 준수, 첨부 증빙 포함 최종본",
+    assignee: "제안 PM",
   },
   {
     id: "sub-02",
@@ -49,7 +51,7 @@ const DEFAULT_CHECKLIST: SubmissionCheckItem[] = [
     category: "LEGAL",
     isMandatory: true,
     isReady: false,
-    detail: "등기소 인감증명원 원본 스캔본 업로드 대기 중",
+    detail: "등기소 인감증명원 원본 스캔본 등록 및 인감 대조",
     assignee: "경영지원팀",
   },
   {
@@ -57,17 +59,17 @@ const DEFAULT_CHECKLIST: SubmissionCheckItem[] = [
     name: "사업자등록증명원 & 중소기업확인서",
     category: "LEGAL",
     isMandatory: true,
-    isReady: true,
-    detail: "국세청 홈택스 및 중소벤처기업부 발급 유효본",
+    isReady: false,
+    detail: "국세청 홈택스 및 중소벤처기업부 발급 최신 유효본",
     assignee: "경영지원팀",
   },
   {
     id: "sub-04",
-    name: "납품실적증명서 (수원 스마트 물류로봇 구축 실적)",
+    name: "주요 납품 실적증명원 (발주기관 관인 날인본)",
     category: "FINANCE",
     isMandatory: true,
-    isReady: true,
-    detail: "발주기관 관인 날인된 8.5억원 납품 실적 증명 첨부",
+    isReady: false,
+    detail: "유관 실적 증명서 발주처 관인 확인 및 첨부",
     assignee: "사업개발팀",
   },
   {
@@ -76,17 +78,17 @@ const DEFAULT_CHECKLIST: SubmissionCheckItem[] = [
     category: "SECURITY",
     isMandatory: true,
     isReady: false,
-    detail: "대표이사 최종 서명 및 법인 직인 날인 확인 필요",
-    assignee: "최법무 (규정준수팀)",
+    detail: "대표이사 최종 서명 및 법인 직인 날인 확인",
+    assignee: "규정준수팀",
   },
   {
     id: "sub-06",
     name: "전자투찰 파일 용량 및 형식 검사 (300MB 이하, PDF/HWP)",
     category: "FORMAT",
     isMandatory: true,
-    isReady: true,
-    detail: "제출 패키지 총 42.8MB로 나라장터 업로드 제한(300MB) 정상 통과",
-    assignee: "시스템 자동검증",
+    isReady: false,
+    detail: "공공조달 시스템 업로드 제한 규격 및 파일 무결성 검증",
+    assignee: "제출 담당자",
   },
 ];
 
@@ -148,113 +150,129 @@ export default function SubmissionsPage() {
         </div>
 
         {/* Opportunity Selector */}
-        <div className="flex items-center gap-2">
-          <select
-            value={selectedOppId}
-            onChange={(e) => setSelectedOppId(e.target.value)}
-            className="h-9 px-3 text-xs bg-card border rounded-md text-foreground max-w-[280px] truncate focus:outline-none"
-          >
-            {opportunities.map((opp) => (
-              <option key={opp.id} value={opp.id}>
-                {opp.title}
-              </option>
-            ))}
-          </select>
-        </div>
+        {opportunities.length > 0 && (
+          <div className="flex items-center gap-2">
+            <select
+              value={selectedOppId}
+              onChange={(e) => setSelectedOppId(e.target.value)}
+              className="h-9 px-3 text-xs bg-card border rounded-md text-foreground max-w-[280px] truncate focus:outline-none"
+            >
+              {opportunities.map((opp) => (
+                <option key={opp.id} value={opp.id}>
+                  {opp.title}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
-      {/* 2. Submission Readiness Banner */}
-      <div className="p-5 rounded-xl border bg-card/60 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-5">
-        <div className="space-y-1">
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-              제출 준비율 (Readiness)
-            </span>
-            <span className="text-2xl font-bold font-mono text-primary">{readyPercent}%</span>
-            <span className="text-xs text-muted-foreground">({readyCount}/{checklist.length} 완료)</span>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            공고 마감: <span className="font-mono text-destructive font-bold">{selectedOpp?.submissionDeadline.split("T")[0] || "D-5"} 18:00</span> · 
-            나라장터(KONEPS) 전자투찰 시스템 접수
-          </p>
-        </div>
-
-        {/* Progress Bar & Final Submit Button */}
-        <div className="flex items-center gap-4">
-          <div className="w-48 bg-muted rounded-full h-3 overflow-hidden">
-            <div
-              className={`h-3 rounded-full transition-all duration-300 ${
-                readyPercent === 100 ? "bg-emerald-500" : "bg-primary"
-              }`}
-              style={{ width: `${readyPercent}%` }}
-            />
-          </div>
-
-          <Button
-            size="sm"
-            onClick={handleFinalSubmit}
-            disabled={submittedConfirmed || mandatoryMissing.length > 0}
-            className={`gap-1.5 text-xs font-bold transition-all ${
-              submittedConfirmed
-                ? "bg-muted text-muted-foreground"
-                : mandatoryMissing.length > 0
-                ? "bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-300 dark:border-slate-700"
-                : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/30"
-            }`}
-          >
-            {mandatoryMissing.length > 0 ? (
-              <>
-                <Lock className="h-3.5 w-3.5 text-rose-500" />
-                <span>제출 잠금 (필수서류 {mandatoryMissing.length}건 미완료)</span>
-              </>
-            ) : (
-              <>
-                <ShieldCheck className="h-4 w-4" />
-                <span>{submittedConfirmed ? "제출 확정 완료" : "최종 제출 승인 (Sign-off)"}</span>
-              </>
-            )}
-          </Button>
-        </div>
-      </div>
-
-      {/* Mandatory Missing Blocker Alert Banner */}
-      {mandatoryMissing.length > 0 && !submittedConfirmed && (
-        <div className="p-4 rounded-xl border border-rose-300 dark:border-rose-900 bg-rose-50/80 dark:bg-rose-950/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs animate-in fade-in-50">
-          <div className="flex items-start gap-3">
-            <div className="p-2 rounded-lg bg-rose-100 dark:bg-rose-900/60 text-rose-600 shrink-0 mt-0.5">
-              <ShieldAlert className="h-5 w-5" />
+      {/* When no opportunities exist in pipeline */}
+      {opportunities.length === 0 ? (
+        <Card className="p-12 text-center border-dashed">
+          <div className="flex flex-col items-center justify-center gap-3">
+            <div className="p-3 rounded-full bg-muted text-muted-foreground">
+              <FileCheck className="h-8 w-8" />
             </div>
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-rose-700 dark:text-rose-400 text-sm">
-                  제출 불가 (Submission Locked) — 필수 서류 {mandatoryMissing.length}건 미완료
+            <h3 className="text-base font-bold text-foreground">
+              현재 점검 대상인 입찰·공모가 없습니다 (클린 상태)
+            </h3>
+            <p className="text-sm text-muted-foreground max-w-md">
+              공모 탐색(/opportunities)에서 나라장터나 기업마당 공고를 동기화하거나 새 공모를 등록하면,
+              해당 공고의 D-Day 마감 카운트다운과 행정 필수 구비서류 체크리스트가 실시간으로 활성화됩니다.
+            </p>
+            <div className="pt-2">
+              <Link href="/opportunities">
+                <Button size="sm" className="gap-2">
+                  <ArrowRight className="h-4 w-4" />
+                  <span>공모 탐색 바로가기</span>
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </Card>
+      ) : (
+        <>
+          {/* 2. Submission Readiness Banner */}
+          <div className="p-5 rounded-xl border bg-card/60 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-5">
+            <div className="space-y-1">
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                  제출 준비율 (Readiness)
                 </span>
-                <Badge variant="destructive" className="text-[10px] font-bold">
-                  실격 위험 차단
-                </Badge>
+                <span className="text-2xl font-bold font-mono text-primary">{readyPercent}%</span>
+                <span className="text-xs text-muted-foreground">({readyCount}/{checklist.length} 완료)</span>
               </div>
-              <p className="text-slate-600 dark:text-slate-400">
-                미완료 서류: <span className="font-semibold text-rose-600 dark:text-rose-300">{mandatoryMissing.map((m) => m.name).join(", ")}</span>
+              <p className="text-xs text-muted-foreground">
+                선택 공모: <span className="font-semibold text-foreground">{selectedOpp?.title}</span> · 
+                마감일: <span className="font-mono text-destructive font-bold">{selectedOpp?.submissionDeadline?.split("T")[0] || "마감일 미정"}</span>
               </p>
-              <p className="text-[11px] text-muted-foreground">
-                공공입찰 심사 규정상 필수 구비서류가 1건이라도 누락되면 자격 미달로 즉시 탈락 처리됩니다. 체크리스트에서 해당 항목을 완료 처리하거나 증빙을 연결하세요.
-              </p>
+            </div>
+
+            {/* Progress Bar & Final Submit Button */}
+            <div className="flex items-center gap-4">
+              <div className="w-48 bg-muted rounded-full h-3 overflow-hidden">
+                <div
+                  className={`h-3 rounded-full transition-all duration-300 ${
+                    readyPercent === 100 ? "bg-emerald-500" : "bg-primary"
+                  }`}
+                  style={{ width: `${readyPercent}%` }}
+                />
+              </div>
+
+              <Button
+                size="sm"
+                onClick={handleFinalSubmit}
+                disabled={submittedConfirmed || mandatoryMissing.length > 0}
+                className={`gap-1.5 text-xs font-bold transition-all ${
+                  submittedConfirmed
+                    ? "bg-muted text-muted-foreground"
+                    : mandatoryMissing.length > 0
+                    ? "bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-300 dark:border-slate-700"
+                    : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/30"
+                }`}
+              >
+                {mandatoryMissing.length > 0 ? (
+                  <>
+                    <Lock className="h-3.5 w-3.5 text-rose-500" />
+                    <span>제출 잠금 (필수서류 {mandatoryMissing.length}건 미완료)</span>
+                  </>
+                ) : (
+                  <>
+                    <ShieldCheck className="h-4 w-4" />
+                    <span>{submittedConfirmed ? "제출 확정 완료" : "최종 제출 승인 (Sign-off)"}</span>
+                  </>
+                )}
+              </Button>
             </div>
           </div>
 
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              setChecklist((prev) => prev.map((item) => ({ ...item, isReady: true })));
-              toast.success("모든 서류 준비 상태로 일괄 변경되었습니다 (시뮬레이션).");
-            }}
-            className="shrink-0 text-xs text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-800 hover:bg-rose-100 dark:hover:bg-rose-900/30"
-          >
-            일괄 완료 처리 (데모)
-          </Button>
-        </div>
-      )}
+          {/* Mandatory Missing Blocker Alert Banner */}
+          {mandatoryMissing.length > 0 && !submittedConfirmed && (
+            <div className="p-4 rounded-xl border border-rose-300 dark:border-rose-900 bg-rose-50/80 dark:bg-rose-950/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs animate-in fade-in-50">
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-lg bg-rose-100 dark:bg-rose-900/60 text-rose-600 shrink-0 mt-0.5">
+                  <ShieldAlert className="h-5 w-5" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-rose-700 dark:text-rose-400 text-sm">
+                      제출 불가 (Submission Locked) — 필수 서류 {mandatoryMissing.length}건 미완료
+                    </span>
+                    <Badge variant="destructive" className="text-[10px] font-bold">
+                      실격 위험 차단
+                    </Badge>
+                  </div>
+                  <p className="text-slate-600 dark:text-slate-400">
+                    미완료 서류: <span className="font-semibold text-rose-600 dark:text-rose-300">{mandatoryMissing.map((m) => m.name).join(", ")}</span>
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    공공입찰 심사 규정상 필수 구비서류가 1건이라도 누락되면 자격 미달로 즉시 탈락 처리됩니다. 체크리스트에서 해당 항목을 완료 처리하거나 증빙을 연결하세요.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
       {/* 3. Checklist Table */}
       <Card>
@@ -318,6 +336,8 @@ export default function SubmissionsPage() {
           </div>
         </CardContent>
       </Card>
+        </>
+      )}
     </div>
   );
 }
