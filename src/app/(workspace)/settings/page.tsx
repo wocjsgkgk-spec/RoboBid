@@ -64,9 +64,9 @@ const MANAGED_CONFIG_LIST: KeyConfigItem[] = [
   },
   {
     keyName: "GEMINI_API_KEY",
-    label: "Google Gemini AI API 키 (무료 티어 제공)",
+    label: "Google Gemini AI API 키 (최신 Flash 무료 티어)",
     category: "ai",
-    description: "공고문(RFP) 문서 분석, 기술요건 분해 및 제안서 초안 생성(Gemini 2.5 Flash)에 사용됩니다.",
+    description: "공고문(RFP) 문서 분석, 기술요건 분해 및 제안서 초안 생성(Gemini Flash Latest / 2.5 / 3.x)에 사용됩니다.",
     placeholder: "AI Studio Gemini API 키 (AIzaSy...)",
     portalUrl: "https://aistudio.google.com/app/apikey",
     providerId: "gemini",

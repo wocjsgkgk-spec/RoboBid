@@ -20,7 +20,13 @@ export class ProposalService {
 
   constructor(draftingEngine?: ProposalDraftingEngine) {
     this.draftingEngine = draftingEngine || new ProposalDraftingEngine();
-    this.seedDefault();
+    // Initial state is completely clean (0 proposals)
+  }
+
+  public clearAll(): void {
+    this.memoryProposals.clear();
+    this.memorySections.clear();
+    this.memoryVersions.clear();
   }
 
   public seedDefault(): void {

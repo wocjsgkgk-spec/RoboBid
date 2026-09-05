@@ -42,7 +42,12 @@ export class OutcomeService {
 
   constructor(analytics?: OutcomeAnalytics) {
     this.analyticsEngine = analytics || outcomeAnalytics;
-    this.seedDefault();
+    // Initial state is completely clean (0 outcomes)
+  }
+
+  public clearAll(): void {
+    this.memoryOutcomes.clear();
+    this.memoryAuditLogs.clear();
   }
 
   public seedDefault(): void {

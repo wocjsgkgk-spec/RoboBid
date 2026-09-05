@@ -7,8 +7,7 @@ class VaultStore {
   private capabilities: Map<string, Capability> = new Map();
 
   private constructor() {
-    // Initialize with standard capability seed data
-    this.seedDefault();
+    // Initial state is completely clean (0 capabilities). Can be seeded via API action if requested.
   }
 
   public static getInstance(): VaultStore {
@@ -16,6 +15,10 @@ class VaultStore {
       VaultStore.instance = new VaultStore();
     }
     return VaultStore.instance;
+  }
+
+  public clearAll(): void {
+    this.capabilities.clear();
   }
 
   public seedDefault(): void {

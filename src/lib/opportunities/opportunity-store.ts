@@ -28,7 +28,7 @@ export class OpportunityStore {
   private decisions: Map<string, BidDecision> = new Map();
 
   private constructor() {
-    this.seedDefault();
+    // Initial state is completely clean (0 items). Populated upon user sync or manual entry.
   }
 
   public static getInstance(): OpportunityStore {
@@ -38,8 +38,13 @@ export class OpportunityStore {
     return OpportunityStore.instance;
   }
 
+  public clearAll(): void {
+    this.opportunities.clear();
+    this.decisions.clear();
+  }
+
   /**
-   * 실전 조달청/중기부/NIPA 공모 3종 기본 적재
+   * 실전 조달청/중기부/NIPA 공모 3종 기본 적재 (테스트 및 데모용)
    */
   public seedDefault(): void {
     this.opportunities.clear();

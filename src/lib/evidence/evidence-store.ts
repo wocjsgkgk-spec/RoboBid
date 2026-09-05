@@ -6,7 +6,7 @@ export class EvidenceStore {
   private items: Map<string, EvidenceItem> = new Map();
 
   private constructor() {
-    this.seedDefault();
+    // Initial state is completely clean (0 items).
   }
 
   public static getInstance(): EvidenceStore {
@@ -14,6 +14,10 @@ export class EvidenceStore {
       EvidenceStore.instance = new EvidenceStore();
     }
     return EvidenceStore.instance;
+  }
+
+  public clearAll(): void {
+    this.items.clear();
   }
 
   public seedDefault(): void {

@@ -57,42 +57,52 @@ export async function POST(req: NextRequest) {
     // 2. Save Keys to .env.local and process.env
     const updates: Partial<Record<ManagedKey, string>> = body.keys || {};
 
-    let envContent = "";
-    if (fs.existsSync(ENV_PATH)) {
-      envContent = fs.readFileSync(ENV_PATH, "utf-8");
-    }
+    let envFileSaved = false;
+    try {
+      let envContent = "";
+      if (fs.existsSync(ENV_PATH)) {
+        envContent = fs.readFileSync(ENV_PATH, "utf-8");
+      }
 
-    const lines = envContent.split("\n");
-    const updatedKeySet = new Set<string>();
+      const lines = envContent.split("\n");
+      const updatedKeySet = new Set<string>();
 
-    const newLines = lines.map((line) => {
-      const trimmed = line.trim();
-      if (trimmed.startsWith("#") || !trimmed.includes("=")) {
+      const newLines = lines.map((line) => {
+        const trimmed = line.trim();
+        if (trimmed.startsWith("#") || !trimmed.includes("=")) {
+          return line;
+        }
+        const [k] = trimmed.split("=");
+        const keyName = k.trim() as ManagedKey;
+        if (updates[keyName] !== undefined) {
+          updatedKeySet.add(keyName);
+          const newVal = updates[keyName]!.trim();
+          process.env[keyName] = newVal;
+          return `${keyName}=${newVal}`;
+        }
         return line;
-      }
-      const [k] = trimmed.split("=");
-      const keyName = k.trim() as ManagedKey;
-      if (updates[keyName] !== undefined) {
-        updatedKeySet.add(keyName);
-        // If user left it empty and it was already masked or not changed, ignore or update
-        const newVal = updates[keyName]!.trim();
-        process.env[keyName] = newVal;
-        return `${keyName}=${newVal}`;
-      }
-      return line;
-    });
+      });
 
-    // Append any keys that weren't present in .env.local
-    for (const [k, v] of Object.entries(updates)) {
-      const keyName = k as ManagedKey;
-      if (!updatedKeySet.has(keyName) && v !== undefined) {
-        const newVal = v.trim();
-        process.env[keyName] = newVal;
-        newLines.push(`${keyName}=${newVal}`);
+      for (const [k, v] of Object.entries(updates)) {
+        const keyName = k as ManagedKey;
+        if (!updatedKeySet.has(keyName) && v !== undefined) {
+          const newVal = v.trim();
+          process.env[keyName] = newVal;
+          newLines.push(`${keyName}=${newVal}`);
+        }
+      }
+
+      fs.writeFileSync(ENV_PATH, newLines.join("\n"), "utf-8");
+      envFileSaved = true;
+    } catch {
+      // In serverless environments like Vercel, the local filesystem is read-only.
+      // process.env is still updated in runtime memory for this instance.
+      for (const [k, v] of Object.entries(updates)) {
+        if (v !== undefined) {
+          process.env[k] = v.trim();
+        }
       }
     }
-
-    fs.writeFileSync(ENV_PATH, newLines.join("\n"), "utf-8");
 
     // Re-read masked status
     const keysStatus: Record<string, { configured: boolean; masked: string }> = {};
@@ -106,7 +116,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: "API 키 설정이 성공적으로 저장 및 활성화되었습니다.",
+      message: envFileSaved
+        ? "API 키 설정이 성공적으로 저장 및 활성화되었습니다."
+        : "API 키가 현재 세션 메모리에 활성화되었습니다. (영구 보관을 위해 Vercel 환경 변수 등록 권장)",
       keys: keysStatus,
     });
   } catch (err: any) {
@@ -189,9 +201,10 @@ async function handleLiveTest(
             message: "Google Gemini API 키가 입력되지 않았습니다.",
           });
         }
-        // Test call to Gemini 1.5 Flash models endpoint
-        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
-        const res = await fetch(endpoint, {
+        // Test call to latest Gemini Flash model endpoint
+        const targetModel = process.env.GEMINI_MODEL || "gemini-flash-latest";
+        let endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${key}`;
+        let res = await fetch(endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -199,13 +212,27 @@ async function handleLiveTest(
             generationConfig: { maxOutputTokens: 5 },
           }),
         });
+
+        // Fallback to gemini-3.6-flash if specific alias is not found
+        if (!res.ok && res.status === 404 && targetModel !== "gemini-3.6-flash") {
+          endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${key}`;
+          res = await fetch(endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: "Hello" }] }],
+              generationConfig: { maxOutputTokens: 5 },
+            }),
+          });
+        }
+
         const latencyMs = Date.now() - startTime;
         if (res.ok) {
           return NextResponse.json({
             success: true,
             status: "CONNECTED",
             latencyMs,
-            message: "Google Gemini AI 모델 연결 성공 (gemini-1.5-flash)",
+            message: `Google Gemini AI 모델 연결 성공 (${targetModel})`,
           });
         } else {
           const errData = await res.json().catch(() => null);

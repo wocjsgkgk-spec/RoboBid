@@ -52,7 +52,25 @@ export class KStartupAdapter extends BaseProviderAdapter {
         };
       }
 
+      const resText = await res.text().catch(() => "");
+      let data: any = null;
+      try {
+        data = JSON.parse(resText);
+      } catch {
+        // Not JSON
+      }
+
       if (!res.ok) {
+        const reasonCode = data?.OpenAPI_ServiceResponse?.cmmMsgHeader?.returnReasonCode;
+        if (reasonCode === "12" || resText.includes("NO_OPENAPI_SERVICE_ERROR") || resText.includes("오픈API 서비스가 없거나")) {
+          return {
+            status: "FAILED",
+            message: "공공데이터포털(data.go.kr)에서 'K-Startup 창업지원정보' 오픈API 활용신청 및 승인 상태 확인이 필요합니다 (오류 12: 서비스 미신청 또는 키 불일치).",
+            latencyMs,
+            lastCheckedAt: now,
+          };
+        }
+
         return {
           status: "FAILED",
           message: `HTTP 오류 발생: ${res.status} ${res.statusText}`,

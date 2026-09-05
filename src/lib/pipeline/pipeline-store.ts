@@ -6,7 +6,7 @@ export class PipelineStore {
   private items: Map<string, PipelineItem> = new Map();
 
   private constructor() {
-    this.seedDefault();
+    // Initial state is completely clean (0 items).
   }
 
   public static getInstance(): PipelineStore {
@@ -14,6 +14,10 @@ export class PipelineStore {
       PipelineStore.instance = new PipelineStore();
     }
     return PipelineStore.instance;
+  }
+
+  public clearAll(): void {
+    this.items.clear();
   }
 
   public seedDefault(): void {

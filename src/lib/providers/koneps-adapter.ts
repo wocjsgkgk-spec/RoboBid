@@ -54,16 +54,45 @@ export class KonepsAdapter extends BaseProviderAdapter {
         };
       }
 
+      const resText = await res.text().catch(() => "");
+      let data: any = null;
+      try {
+        data = JSON.parse(resText);
+      } catch {
+        // Not JSON
+      }
+
       if (!res.ok) {
+        const errorMsg = data?.OpenAPI_ServiceResponse?.cmmMsgHeader?.returnAuthMsg ||
+                         data?.response?.header?.resultMsg;
+        const reasonCode = data?.OpenAPI_ServiceResponse?.cmmMsgHeader?.returnReasonCode;
+
+        if (reasonCode === "12" || resText.includes("NO_OPENAPI_SERVICE_ERROR") || resText.includes("오픈API 서비스가 없거나")) {
+          return {
+            status: "FAILED",
+            message: "공공데이터포털(data.go.kr)에서 '조달청 나라장터 입찰공고' 오픈API 활용신청 및 승인 상태 확인이 필요합니다 (오류 12: 서비스 미신청 또는 키 불일치).",
+            latencyMs,
+            lastCheckedAt: now,
+          };
+        }
+
+        if (reasonCode === "30" || resText.includes("SERVICE_KEY_IS_NOT_REGISTERED_ERROR")) {
+          return {
+            status: "FAILED",
+            message: "등록되지 않은 공공데이터포털 인증키입니다. data.go.kr 마이페이지에서 일반 인증키(Encoding/Decoding)를 확인하세요.",
+            latencyMs,
+            lastCheckedAt: now,
+          };
+        }
+
         return {
           status: "FAILED",
-          message: `HTTP 오류 발생: ${res.status} ${res.statusText}`,
+          message: errorMsg || `HTTP 오류 발생: ${res.status} ${res.statusText}`,
           latencyMs,
           lastCheckedAt: now,
         };
       }
 
-      const data = await res.json().catch(() => null);
       if (!data || data.response?.header?.resultCode !== "00") {
         return {
           status: "DEGRADED",

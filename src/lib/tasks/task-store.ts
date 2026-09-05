@@ -6,7 +6,7 @@ export class TaskStore {
   private tasks: Map<string, Task> = new Map();
 
   private constructor() {
-    this.seedDefault();
+    // Initial state is completely clean (0 items).
   }
 
   public static getInstance(): TaskStore {
@@ -14,6 +14,10 @@ export class TaskStore {
       TaskStore.instance = new TaskStore();
     }
     return TaskStore.instance;
+  }
+
+  public clearAll(): void {
+    this.tasks.clear();
   }
 
   public seedDefault(): void {

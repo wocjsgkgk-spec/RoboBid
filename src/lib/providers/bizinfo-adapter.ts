@@ -31,12 +31,12 @@ export class BizinfoAdapter extends BaseProviderAdapter {
 
     try {
       const startTime = Date.now();
-      const endpoint = `https://www.bizinfo.go.kr/uss/openapi/openApi.do?crtfcKey=${this.safeEncodeServiceKey(
+      const endpoint = `https://www.bizinfo.go.kr/uss/rss/bizinfoApi.do?crtfcKey=${this.safeEncodeServiceKey(
         key
-      )}&dataType=json&display=1&pageIndex=1`;
+      )}&dataType=json&searchCnt=1`;
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const timeoutId = setTimeout(() => controller.abort(), 7000);
 
       const res = await fetch(endpoint, { signal: controller.signal });
       clearTimeout(timeoutId);
@@ -61,6 +61,16 @@ export class BizinfoAdapter extends BaseProviderAdapter {
         };
       }
 
+      const json = await res.json().catch(() => null);
+      if (json?.jsonArray && Array.isArray(json.jsonArray)) {
+        return {
+          status: "CONNECTED",
+          message: `기업마당 실시간 지원사업 API 정상 연결 확인 (${json.jsonArray.length}건 응답)`,
+          latencyMs,
+          lastCheckedAt: now,
+        };
+      }
+
       return {
         status: "CONNECTED",
         message: "기업마당 API 정상 통신 확인",
@@ -71,6 +81,7 @@ export class BizinfoAdapter extends BaseProviderAdapter {
       return {
         status: "FAILED",
         message: err.name === "AbortError" ? "요청 타임아웃" : err.message,
+        latencyMs: 0,
         lastCheckedAt: now,
       };
     }
@@ -85,9 +96,9 @@ export class BizinfoAdapter extends BaseProviderAdapter {
     const pageNo = options.pageNo || 1;
     const numOfRows = options.numOfRows || 20;
 
-    const endpoint = `https://www.bizinfo.go.kr/uss/openapi/openApi.do?crtfcKey=${this.safeEncodeServiceKey(
+    const endpoint = `https://www.bizinfo.go.kr/uss/rss/bizinfoApi.do?crtfcKey=${this.safeEncodeServiceKey(
       key
-    )}&dataType=json&display=${numOfRows}&pageIndex=${pageNo}`;
+    )}&dataType=json&searchCnt=${numOfRows}`;
 
     const res = await fetch(endpoint);
     if (!res.ok) {

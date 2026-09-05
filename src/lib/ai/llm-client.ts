@@ -95,14 +95,14 @@ export class LLMClient {
   }
 
   /**
-   * Call Google Gemini REST API (gemini-1.5-flash)
+   * Call Google Gemini REST API (gemini-flash-latest / Gemini 2.5/3.x Flash)
    */
   private async generateWithGemini(
     options: LLMGenerateOptions,
     startTime: number
   ): Promise<LLMGenerateResult> {
     const apiKey = process.env.GEMINI_API_KEY!;
-    const model = "gemini-1.5-flash";
+    const model = process.env.GEMINI_MODEL || "gemini-flash-latest";
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
     // Format messages for Gemini
