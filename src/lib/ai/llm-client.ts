@@ -102,8 +102,17 @@ export class LLMClient {
     startTime: number
   ): Promise<LLMGenerateResult> {
     const apiKey = process.env.GEMINI_API_KEY!;
-    const model = process.env.GEMINI_MODEL || "gemini-flash-latest";
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+    const candidateModels = [
+      process.env.GEMINI_MODEL,
+      "gemini-flash-lite-latest",
+      "gemini-3.6-flash",
+      "gemini-3.5-flash",
+      "gemini-flash-latest",
+    ].filter(Boolean) as string[];
+
+    // Unique model list to try sequentially
+    const modelsToTry = Array.from(new Set(candidateModels));
+    let lastError: Error | null = null;
 
     // Format messages for Gemini
     const systemMessage = options.messages.find((m) => m.role === "system");
@@ -130,30 +139,40 @@ export class LLMClient {
       };
     }
 
-    const res = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    for (const model of modelsToTry) {
+      try {
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        const res = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => null);
-      throw new Error(err?.error?.message || `Gemini API error ${res.status}`);
+        if (!res.ok) {
+          const err = await res.json().catch(() => null);
+          throw new Error(err?.error?.message || `Gemini API error ${res.status}`);
+        }
+
+        const data = await res.json();
+        const candidate = data.candidates?.[0];
+        const text = candidate?.content?.parts?.[0]?.text || "";
+
+        return {
+          text,
+          provider: "gemini",
+          model,
+          latencyMs: Date.now() - startTime,
+          usage: {
+            totalTokens: data.usageMetadata?.totalTokenCount,
+          },
+        };
+      } catch (err: any) {
+        lastError = err;
+        console.warn(`[LLMClient] Gemini model ${model} failed (${err.message}), trying fallback...`);
+      }
     }
 
-    const data = await res.json();
-    const candidate = data.candidates?.[0];
-    const text = candidate?.content?.parts?.[0]?.text || "";
-
-    return {
-      text,
-      provider: "gemini",
-      model,
-      latencyMs: Date.now() - startTime,
-      usage: {
-        totalTokens: data.usageMetadata?.totalTokenCount,
-      },
-    };
+    throw lastError || new Error("All Gemini models failed");
   }
 
   /**

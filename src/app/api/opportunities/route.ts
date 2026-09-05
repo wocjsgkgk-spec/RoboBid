@@ -102,6 +102,17 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    if (body.action === "UPDATE_PRICE") {
+      const opp = opportunityStore.getById(body.opportunityId);
+      if (!opp) {
+        return NextResponse.json({ success: false, error: "공고를 찾을 수 없습니다." }, { status: 404 });
+      }
+      opp.estimatedPrice = body.estimatedPrice;
+      opp.updatedAt = new Date().toISOString();
+      opportunityStore.save(opp);
+      return NextResponse.json({ success: true, opportunity: opp });
+    }
+
     if (body.opportunity) {
       const saved = opportunityStore.save(body.opportunity);
 

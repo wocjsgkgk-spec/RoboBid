@@ -22,6 +22,16 @@ import {
   KonepsPricingCalculator,
   BiddingPriceSimulationResult,
 } from "@/lib/bidding/koneps-pricing-calculator";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Opportunity } from "@/types";
+import Link from "next/link";
 import { toast } from "sonner";
 
 export default function ToolsPage() {
@@ -34,6 +44,58 @@ export default function ToolsPage() {
   const [roundingMethod, setRoundingMethod] = useState<"CEIL" | "ROUND" | "FLOOR">("CEIL");
   const [selectedIndices, setSelectedIndices] = useState<number[]>([1, 4, 8, 12]);
   const [copied, setCopied] = useState(false);
+  const [applyDialogOpen, setApplyDialogOpen] = useState(false);
+  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+  const [selectedOppId, setSelectedOppId] = useState<string>("");
+  const [isApplying, setIsApplying] = useState(false);
+
+  const openApplyDialog = async () => {
+    setApplyDialogOpen(true);
+    try {
+      const res = await fetch("/api/opportunities?limit=100");
+      const data = await res.json();
+      if (data.opportunities && data.opportunities.length > 0) {
+        setOpportunities(data.opportunities);
+        if (!selectedOppId) {
+          setSelectedOppId(data.opportunities[0].id);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load opportunities:", e);
+    }
+  };
+
+  const handleApplyToPipeline = async () => {
+    if (!selectedOppId) {
+      toast.error("적용할 공모를 선택해주세요.");
+      return;
+    }
+    setIsApplying(true);
+    try {
+      const res = await fetch("/api/opportunities", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "UPDATE_PRICE",
+          opportunityId: selectedOppId,
+          estimatedPrice: konepsResult.drawnMinBidPrice,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(
+          `투찰 목표가(${konepsResult.drawnMinBidPrice.toLocaleString()}원)가 공모 파이프라인에 정상 반영되었습니다.`
+        );
+        setApplyDialogOpen(false);
+      } else {
+        toast.error(data.error || "반영에 실패했습니다.");
+      }
+    } catch (e: any) {
+      toast.error(e.message || "오류가 발생했습니다.");
+    } finally {
+      setIsApplying(false);
+    }
+  };
 
   // R&D Co-funding Calculator State
   const [totalRndBudget, setTotalRndBudget] = useState<number>(1000000000); // 10억원
@@ -246,13 +308,23 @@ export default function ToolsPage() {
                     예정가격 대비 {( (konepsResult.drawnMinBidPrice / konepsResult.drawnEstimatedPrice) * 100 ).toFixed(3)}%
                   </span>
                 </div>
-                <Button
-                  onClick={() => handleCopy(konepsResult.drawnMinBidPrice.toString())}
-                  className="gap-1.5 text-xs font-bold self-start sm:self-auto"
-                >
-                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                  <span>{copied ? "복사 완료!" : "투찰가 복사"}</span>
-                </Button>
+                <div className="flex items-center gap-2 self-start sm:self-auto">
+                  <Button
+                    onClick={() => handleCopy(konepsResult.drawnMinBidPrice.toString())}
+                    variant="outline"
+                    className="gap-1.5 text-xs font-bold"
+                  >
+                    {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
+                    <span>{copied ? "복사 완료!" : "투찰가 복사"}</span>
+                  </Button>
+                  <Button
+                    onClick={openApplyDialog}
+                    className="gap-1.5 text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90"
+                  >
+                    <TrendingDown className="h-4 w-4" />
+                    <span>파이프라인에 적용</span>
+                  </Button>
+                </div>
               </div>
 
               {/* 15 Reserve Prices Grid */}
@@ -434,6 +506,77 @@ export default function ToolsPage() {
           </Card>
         </div>
       )}
+
+      {/* Apply to Pipeline Dialog */}
+      <Dialog open={applyDialogOpen} onOpenChange={setApplyDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold flex items-center gap-2">
+              <TrendingDown className="h-5 w-5 text-primary" />
+              공모 파이프라인에 투찰가 반영
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              A값 공제 계산 결과인 <strong>{konepsResult.drawnMinBidPrice.toLocaleString()}원</strong>을 선택하신 공모의 목표 투찰가(Estimated Price)로 저장합니다.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            {opportunities.length === 0 ? (
+              <div className="p-4 rounded-lg bg-muted/40 text-center space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  현재 등록된 공모가 없습니다. 공모 탐색 메뉴에서 공고를 먼저 등록하거나 수집해 주세요.
+                </p>
+                <Link href="/opportunities">
+                  <Button size="sm" variant="outline" className="text-xs mt-2">
+                    공모 탐색 바로가기
+                  </Button>
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-foreground">
+                  적용할 공모 선택
+                </label>
+                <select
+                  value={selectedOppId}
+                  onChange={(e) => setSelectedOppId(e.target.value)}
+                  className="w-full text-xs p-2.5 rounded-lg border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  {opportunities.map((opp) => (
+                    <option key={opp.id} value={opp.id}>
+                      [{opp.announcingAgency}] {opp.title.slice(0, 35)}...
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[11px] text-muted-foreground">
+                  반영 후 해당 공모의 상세 카드 및 제안서/제출마감 점검 화면에서 목표가가 동기화됩니다.
+                </p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setApplyDialogOpen(false)}
+              className="text-xs"
+            >
+              취소
+            </Button>
+            {opportunities.length > 0 && (
+              <Button
+                size="sm"
+                onClick={handleApplyToPipeline}
+                disabled={isApplying || !selectedOppId}
+                className="text-xs font-bold gap-1.5"
+              >
+                {isApplying ? "반영 중..." : "목표가 확정 반영"}
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
