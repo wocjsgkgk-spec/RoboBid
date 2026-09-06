@@ -233,13 +233,16 @@ export default function SettingsPage() {
         ...prev,
         [item.keyName]: {
           success: data.success,
+          status: data.status,
           message: data.message,
           latencyMs: data.latencyMs,
         },
       }));
 
-      if (data.success) {
+      if (data.status === "CONNECTED" || (data.success && data.status !== "DEGRADED")) {
         toast.success(`[${item.label}] 연결 테스트 성공 (${data.latencyMs ?? 0}ms)`);
+      } else if (data.status === "DEGRADED") {
+        toast.warning(`[${item.label}] ${data.message}`);
       } else {
         toast.error(`[${item.label}] 연결 테스트 실패: ${data.message}`);
       }
@@ -560,15 +563,17 @@ export default function SettingsPage() {
 
                     {testResult && (
                       <div
-                        className={`text-[11px] p-2 rounded-md flex items-center justify-between ${
-                          testResult.success
+                        className={`text-[11px] p-2.5 rounded-md flex items-start justify-between gap-2 ${
+                          (testResult as any).status === "CONNECTED" || (testResult.success && (testResult as any).status !== "DEGRADED")
                             ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                            : (testResult as any).status === "DEGRADED"
+                            ? "bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30"
                             : "bg-destructive/10 text-destructive border border-destructive/20"
                         }`}
                       >
-                        <span>{testResult.message}</span>
+                        <span className="leading-relaxed">{testResult.message}</span>
                         {testResult.latencyMs && (
-                          <span className="font-mono text-[10px] opacity-80">
+                          <span className="font-mono text-[10px] opacity-80 shrink-0">
                             {testResult.latencyMs}ms
                           </span>
                         )}

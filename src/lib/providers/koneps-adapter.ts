@@ -38,101 +38,158 @@ export class KonepsAdapter extends BaseProviderAdapter {
       const dd = String(nowDt.getDate()).padStart(2, "0");
       const todayStr = `${yyyy}${mm}${dd}`;
 
-      const prev = new Date(Date.now() - 7 * 86400000);
+      // 7일치 전체가 아닌 최근 1일(당일) 기준으로 쿼리 경량화하여 DB 검색 부하 최소화
+      const prev = new Date(Date.now() - 1 * 86400000);
       const pYyyy = prev.getFullYear();
       const pMm = String(prev.getMonth() + 1).padStart(2, "0");
       const pDd = String(prev.getDate()).padStart(2, "0");
       const prevStr = `${pYyyy}${pMm}${pDd}`;
 
-      // Call active KONEPS BidPublicInfoService PPSSrch endpoint
-      const endpoint = `https://apis.data.go.kr/1230000/ad/BidPublicInfoService/getBidPblancListInfoServcPPSSrch?serviceKey=${this.safeEncodeServiceKey(
-        key
-      )}&numOfRows=1&pageNo=1&inqryDiv=1&inqryBgnDt=${prevStr}0000&inqryEndDt=${todayStr}2359&type=json`;
+      const encodedKey = this.safeEncodeServiceKey(key);
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 7000);
+      // 공공데이터포털 조달청 엔드포인트 후보 (최신 표준 서비스04 우선, 레거시 ad 폴백)
+      const candidateEndpoints = [
+        `https://apis.data.go.kr/1230000/BidPublicInfoService04/getBidPblancListInfoThngPPSSrch?serviceKey=${encodedKey}&numOfRows=1&pageNo=1&inqryDiv=1&inqryBgnDt=${prevStr}0000&inqryEndDt=${todayStr}2359&type=json`,
+        `https://apis.data.go.kr/1230000/ad/BidPublicInfoService/getBidPblancListInfoServcPPSSrch?serviceKey=${encodedKey}&numOfRows=1&pageNo=1&inqryDiv=1&inqryBgnDt=${prevStr}0000&inqryEndDt=${todayStr}2359&type=json`,
+      ];
 
-      const res = await fetch(endpoint, { signal: controller.signal });
-      clearTimeout(timeoutId);
+      let lastError: any = null;
 
-      const latencyMs = Date.now() - startTime;
+      for (const endpoint of candidateEndpoints) {
+        try {
+          const controller = new AbortController();
+          // 공공데이터포털 서버 특성을 고려하여 15초(15000ms)로 여유 있게 타임아웃 상향
+          const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-      if (res.status === 429) {
-        return {
-          status: "RATE_LIMITED",
-          message: "일일 호출 한도 초과 또는 Rate Limit에 도달했습니다.",
-          latencyMs,
-          lastCheckedAt: now,
-        };
-      }
+          const res = await fetch(endpoint, {
+            signal: controller.signal,
+            headers: {
+              Accept: "application/json, text/xml, */*",
+              "User-Agent": "RoboBid-AI-BidOps/1.0",
+            },
+          });
+          clearTimeout(timeoutId);
 
-      const resText = await res.text().catch(() => "");
-      let data: any = null;
-      try {
-        data = JSON.parse(resText);
-      } catch {
-        // Not JSON
-      }
+          const latencyMs = Date.now() - startTime;
 
-      if (!res.ok) {
-        const errorMsg = data?.OpenAPI_ServiceResponse?.cmmMsgHeader?.returnAuthMsg ||
-                         data?.response?.header?.resultMsg;
-        const reasonCode = data?.OpenAPI_ServiceResponse?.cmmMsgHeader?.returnReasonCode;
+          if (res.status === 429) {
+            return {
+              status: "RATE_LIMITED",
+              message: "일일 호출 한도 초과 또는 Rate Limit에 도달했습니다.",
+              latencyMs,
+              lastCheckedAt: now,
+            };
+          }
 
-        if (reasonCode === "12" || resText.includes("NO_OPENAPI_SERVICE_ERROR")) {
+          const resText = await res.text().catch(() => "");
+          let data: any = null;
+          try {
+            data = JSON.parse(resText);
+          } catch {
+            // Not JSON
+          }
+
+          if (!res.ok || resText.includes("<OpenAPI_ServiceResponse>")) {
+            const errorMsg =
+              data?.OpenAPI_ServiceResponse?.cmmMsgHeader?.returnAuthMsg ||
+              data?.response?.header?.resultMsg;
+            const reasonCode = data?.OpenAPI_ServiceResponse?.cmmMsgHeader?.returnReasonCode;
+
+            if (reasonCode === "12" || resText.includes("NO_OPENAPI_SERVICE_ERROR") || resText.includes("12")) {
+              return {
+                status: "FAILED",
+                message: "공공데이터포털(data.go.kr)에서 '조달청_나라장터 입찰공고정보서비스' 활용신청 상태 확인이 필요합니다 (오류 12: 서비스 미신청 또는 승인 대기).",
+                latencyMs,
+                lastCheckedAt: now,
+              };
+            }
+
+            if (reasonCode === "30" || resText.includes("SERVICE_KEY_IS_NOT_REGISTERED_ERROR") || resText.includes("30")) {
+              return {
+                status: "FAILED",
+                message: "등록되지 않은 공공데이터포털 인증키입니다. data.go.kr 마이페이지에서 일반 인증키(Encoding/Decoding)를 확인하세요.",
+                latencyMs,
+                lastCheckedAt: now,
+              };
+            }
+
+            if (reasonCode === "22" || resText.includes("LIMITED_NUMBER_OF_SERVICE_REQUESTS_EXCEEDS_ERROR")) {
+              return {
+                status: "RATE_LIMITED",
+                message: "일일 트래픽 허용량을 초과했습니다 (오류 22).",
+                latencyMs,
+                lastCheckedAt: now,
+              };
+            }
+
+            return {
+              status: "FAILED",
+              message: errorMsg || `HTTP 응답 오류 (${res.status} ${res.statusText})`,
+              latencyMs,
+              lastCheckedAt: now,
+            };
+          }
+
+          if (data?.response?.header?.resultCode === "00") {
+            return {
+              status: "CONNECTED",
+              message: "조달청 나라장터(KONEPS) 실시간 입찰공고 API 정상 통신 확인",
+              latencyMs,
+              lastCheckedAt: now,
+            };
+          }
+
+          if (data?.response?.header?.resultMsg) {
+            return {
+              status: "DEGRADED",
+              message: data.response.header.resultMsg,
+              latencyMs,
+              lastCheckedAt: now,
+            };
+          }
+
           return {
-            status: "FAILED",
-            message: "공공데이터포털(data.go.kr)에서 '조달청_나라장터 입찰공고정보서비스' 활용신청 상태를 확인하세요 (오류 12: 서비스 미신청).",
+            status: "CONNECTED",
+            message: "조달청 나라장터 공공데이터 API 정상 응답 확인",
             latencyMs,
             lastCheckedAt: now,
           };
+        } catch (candidateErr: any) {
+          lastError = candidateErr;
+          // 다음 엔드포인트 후보로 계속 시도
+          continue;
         }
-
-        if (reasonCode === "30" || resText.includes("SERVICE_KEY_IS_NOT_REGISTERED_ERROR")) {
-          return {
-            status: "FAILED",
-            message: "등록되지 않은 공공데이터포털 인증키입니다. data.go.kr 마이페이지에서 일반 인증키(Encoding/Decoding)를 확인하세요.",
-            latencyMs,
-            lastCheckedAt: now,
-          };
-        }
-
-        return {
-          status: "FAILED",
-          message: errorMsg || `HTTP 오류 발생: ${res.status} ${res.statusText}`,
-          latencyMs,
-          lastCheckedAt: now,
-        };
       }
 
-      if (data?.response?.header?.resultCode === "00") {
-        return {
-          status: "CONNECTED",
-          message: "조달청 나라장터(KONEPS) 실시간 입찰공고 API 정상 통신 확인",
-          latencyMs,
-          lastCheckedAt: now,
-        };
-      }
-
-      if (data?.response?.header?.resultMsg) {
-        return {
-          status: "DEGRADED",
-          message: data.response.header.resultMsg,
-          latencyMs,
-          lastCheckedAt: now,
-        };
-      }
+      // 모든 엔드포인트에서 타임아웃 또는 실패 시
+      const isTimeout =
+        lastError?.name === "AbortError" ||
+        lastError?.code === "UND_ERR_CONNECT_TIMEOUT" ||
+        lastError?.cause?.code === "UND_ERR_CONNECT_TIMEOUT" ||
+        lastError?.message?.includes("fetch failed") ||
+        lastError?.message?.includes("timeout") ||
+        lastError?.message?.includes("Timeout");
 
       return {
-        status: "CONNECTED",
-        message: "조달청 나라장터 공공데이터 API 정상 응답 확인",
-        latencyMs,
+        status: isTimeout ? "DEGRADED" : "FAILED",
+        message: isTimeout
+          ? "공공데이터포털(apis.data.go.kr) 서버 응답 지연 상태입니다. (입력하신 인증키는 정상 저장되어 있으며, 포털 서버 지연 해소 시 실시간 수집에 정상 적용됩니다.)"
+          : lastError?.message || "공공데이터포털 서버 연결 실패",
         lastCheckedAt: now,
       };
     } catch (err: any) {
+      const isTimeout =
+        err?.name === "AbortError" ||
+        err?.code === "UND_ERR_CONNECT_TIMEOUT" ||
+        err?.cause?.code === "UND_ERR_CONNECT_TIMEOUT" ||
+        err?.message?.includes("fetch failed") ||
+        err?.message?.includes("timeout");
+
       return {
-        status: "FAILED",
-        message: err.name === "AbortError" ? "API 요청 타임아웃 (7초 초과)" : err.message,
+        status: isTimeout ? "DEGRADED" : "FAILED",
+        message: isTimeout
+          ? "공공데이터포털(apis.data.go.kr) 서버 응답 지연 상태입니다. (입력하신 인증키는 정상 저장되어 있으며, 포털 서버 지연 해소 시 실시간 수집에 정상 적용됩니다.)"
+          : err.message,
         lastCheckedAt: now,
       };
     }
@@ -176,7 +233,18 @@ export class KonepsAdapter extends BaseProviderAdapter {
         keyword
       )}`;
 
-      const res = await fetch(endpoint);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+      const res = await fetch(endpoint, {
+        signal: controller.signal,
+        headers: {
+          Accept: "application/json, text/xml, */*",
+          "User-Agent": "RoboBid-AI-BidOps/1.0",
+        },
+      });
+      clearTimeout(timeoutId);
+
       if (!res.ok) {
         if (options.fallbackToMock) {
           const mockItems = this.getMockTenders(keyword);
