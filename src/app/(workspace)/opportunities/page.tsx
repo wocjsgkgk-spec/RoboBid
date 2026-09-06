@@ -45,6 +45,13 @@ export default function OpportunitiesPage() {
   // Modals
   const [manualModalOpen, setManualModalOpen] = useState(false);
   const [csvModalOpen, setCsvModalOpen] = useState(false);
+  const [syncModalOpen, setSyncModalOpen] = useState(false);
+
+  // Sync Modal State
+  const [syncSources, setSyncSources] = useState<string[]>(["koneps", "bizinfo"]);
+  const [syncKeyword, setSyncKeyword] = useState("로봇");
+  const [syncFallbackAllowed, setSyncFallbackAllowed] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // Form State for Manual Input
   const [formTitle, setFormTitle] = useState("");
@@ -90,27 +97,33 @@ export default function OpportunitiesPage() {
     loadData();
   }, []);
 
-  const [isSyncing, setIsSyncing] = useState(false);
-
-  const handleSyncKoneps = async () => {
+  const handleExecuteSync = async () => {
+    if (syncSources.length === 0) {
+      toast.error("최소 1개 이상의 수집 소스를 선택해주세요.");
+      return;
+    }
     setIsSyncing(true);
     try {
       const res = await fetch("/api/ingestion/sync", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          providerId: "koneps",
-          keyword: searchQuery.trim() || "로봇",
-          fallbackToMock: true,
+          sources: syncSources,
+          keyword: syncKeyword.trim() || "로봇",
+          fallbackToMock: syncFallbackAllowed,
         }),
       });
       const data = await res.json();
-      if (data.success && data.result?.items?.length) {
-        opportunityStore.upsertFromApi(data.result.items);
-        toast.success(`조달청 나라장터 공고 ${data.result.items.length}건이 성공적으로 동기화되었습니다.`);
+      if (data.success && data.totalReceived > 0) {
+        toast.success(
+          `수집 완료: 총 ${data.totalReceived}건 공고가 실시간 동기화되었습니다 (채널: ${data.sources.join(", ")}).`
+        );
+        setSyncModalOpen(false);
         loadData();
+      } else if (data.success) {
+        toast.info("검색 조건에 일치하는 신규 공고가 없거나 조회가 비어있습니다.");
       } else {
-        toast.info("동기화할 신규 공고가 없거나 조회에 실패했습니다.");
+        toast.error(`동기화 실패: ${data.error || "알 수 없는 오류"}`);
       }
     } catch (err: any) {
       toast.error(`동기화 중 오류 발생: ${err.message}`);
@@ -205,14 +218,14 @@ export default function OpportunitiesPage() {
         {/* Action Buttons */}
         <div className="flex items-center gap-2 flex-wrap">
           <Button
-            onClick={handleSyncKoneps}
+            onClick={() => setSyncModalOpen(true)}
             disabled={isSyncing}
             size="sm"
             variant="secondary"
             className="gap-1.5 border border-primary/20 text-primary hover:bg-primary/10"
           >
             <RefreshCw className={`h-4 w-4 ${isSyncing ? "animate-spin text-primary" : ""}`} />
-            <span>{isSyncing ? "동기화 중..." : "나라장터 실시간 동기화"}</span>
+            <span>{isSyncing ? "수집 중..." : "실시간 공모 수집 (KONEPS·기업마당)"}</span>
           </Button>
           <Button onClick={() => setManualModalOpen(true)} size="sm" className="gap-1.5">
             <Plus className="h-4 w-4" />
@@ -626,6 +639,129 @@ export default function OpportunitiesPage() {
               </Button>
               <Button size="sm" onClick={handleCsvImport}>
                 샘플 CSV 일괄 적재 실행
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Multi-Source Live Sync Modal */}
+      {syncModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md bg-card border rounded-xl shadow-xl p-5 space-y-4 text-xs animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b pb-2">
+              <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                <RefreshCw className="h-4 w-4 text-primary" />
+                실시간 공모 다채널 수집 설정
+              </h3>
+              <button
+                onClick={() => setSyncModalOpen(false)}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                닫기
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-muted-foreground font-medium mb-1">
+                  수집 대상 공공 채널 선택
+                </label>
+                <div className="space-y-1.5 p-3 rounded-lg border bg-muted/20">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={syncSources.includes("koneps")}
+                      onChange={(e) => {
+                        if (e.target.checked) setSyncSources([...syncSources, "koneps"]);
+                        else setSyncSources(syncSources.filter((s) => s !== "koneps"));
+                      }}
+                      className="rounded border-input text-primary focus:ring-primary"
+                    />
+                    <span className="font-semibold text-foreground">조달청 나라장터 (KONEPS 입찰공고)</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={syncSources.includes("bizinfo")}
+                      onChange={(e) => {
+                        if (e.target.checked) setSyncSources([...syncSources, "bizinfo"]);
+                        else setSyncSources(syncSources.filter((s) => s !== "bizinfo"));
+                      }}
+                      className="rounded border-input text-primary focus:ring-primary"
+                    />
+                    <span className="font-semibold text-foreground">중소벤처기업부 기업마당 (Bizinfo 지원사업)</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer opacity-75">
+                    <input
+                      type="checkbox"
+                      checked={syncSources.includes("iris")}
+                      onChange={(e) => {
+                        if (e.target.checked) setSyncSources([...syncSources, "iris"]);
+                        else setSyncSources(syncSources.filter((s) => s !== "iris"));
+                      }}
+                      className="rounded border-input text-primary focus:ring-primary"
+                    />
+                    <span className="text-foreground">범부처연구비통합관리시스템 (IRIS R&D)</span>
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-muted-foreground font-medium mb-1">
+                  수집 검색 키워드
+                </label>
+                <input
+                  type="text"
+                  value={syncKeyword}
+                  onChange={(e) => setSyncKeyword(e.target.value)}
+                  placeholder="예: 로봇, AI, 스마트공장, 자율주행"
+                  className="w-full px-3 py-2 bg-background border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+                <div className="flex gap-1.5 mt-1.5 flex-wrap">
+                  {["로봇", "인공지능", "스마트제조", "자동화", "소프트웨어"].map((kw) => (
+                    <button
+                      key={kw}
+                      type="button"
+                      onClick={() => setSyncKeyword(kw)}
+                      className="px-2 py-0.5 text-[10px] rounded border bg-muted/40 hover:bg-muted text-muted-foreground"
+                    >
+                      #{kw}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="pt-1">
+                <label className="flex items-center gap-2 cursor-pointer text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={syncFallbackAllowed}
+                    onChange={(e) => setSyncFallbackAllowed(e.target.checked)}
+                    className="rounded border-input text-primary focus:ring-primary"
+                  />
+                  <span>API 키 미신청 시 표준 데모 세트로 자동 보완</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="pt-2 flex items-center justify-end gap-2 border-t">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setSyncModalOpen(false)}
+              >
+                취소
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleExecuteSync}
+                disabled={isSyncing}
+                className="gap-1.5 font-bold"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${isSyncing ? "animate-spin" : ""}`} />
+                <span>{isSyncing ? "실시간 수집 실행 중..." : "수집 실행 (Sync Now)"}</span>
               </Button>
             </div>
           </div>

@@ -24,6 +24,7 @@ import { opportunityStore } from "@/lib/opportunities/opportunity-store";
 import { Opportunity } from "@/types";
 import { ComplianceStatus, RequirementMatrixItem } from "@/types/compliance";
 import { ComplianceMatrixTable } from "@/components/compliance/compliance-matrix-table";
+import { toast } from "sonner";
 
 interface RequirementItem {
   code: string;
@@ -117,6 +118,34 @@ export default function RFPAnalysisPage() {
     );
   };
 
+  const handleTransferToProposals = () => {
+    if (!selectedOpp) {
+      toast.error("전송할 공모를 선택해주세요.");
+      return;
+    }
+    const handoffData = {
+      opportunityId: selectedOpp.id,
+      title: selectedOpp.title,
+      announcingAgency: selectedOpp.announcingAgency,
+      bidType: selectedOpp.bidType,
+      allocatedBudget: selectedOpp.allocatedBudget,
+      submissionDeadline: selectedOpp.submissionDeadline,
+      requirements: requirements.map((r) => ({
+        code: r.code,
+        category: r.category,
+        originalText: r.originalText,
+        proposalSection: r.proposalSection,
+        status: r.status,
+      })),
+      timestamp: Date.now(),
+    };
+    localStorage.setItem("robobid_rfp_handoff", JSON.stringify(handoffData));
+    toast.success(`'${selectedOpp.title}' 요구사항 ${requirements.length}건이 제안서 워크스페이스로 전송되었습니다.`);
+    setTimeout(() => {
+      window.location.href = "/proposals";
+    }, 400);
+  };
+
   const satisfiedCount = requirements.filter((r) => r.status === "SATISFIED").length;
   const complianceRate = Math.round((satisfiedCount / requirements.length) * 100);
 
@@ -139,12 +168,12 @@ export default function RFPAnalysisPage() {
           </p>
         </div>
 
-        {/* Opportunity Selector */}
-        <div className="flex items-center gap-2">
+        {/* Opportunity Selector & Actions */}
+        <div className="flex items-center gap-2 flex-wrap">
           <select
             value={selectedOppId}
             onChange={(e) => setSelectedOppId(e.target.value)}
-            className="h-9 px-3 text-xs bg-card border rounded-md text-foreground max-w-[280px] truncate focus:outline-none"
+            className="h-9 px-3 text-xs bg-card border rounded-md text-foreground max-w-[260px] truncate focus:outline-none"
           >
             {opportunities.map((opp) => (
               <option key={opp.id} value={opp.id}>
@@ -152,6 +181,15 @@ export default function RFPAnalysisPage() {
               </option>
             ))}
           </select>
+          <Button
+            size="sm"
+            onClick={handleTransferToProposals}
+            disabled={!selectedOpp}
+            className="gap-1.5 text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            <Sparkles className="h-4 w-4" />
+            <span>제안서 작성으로 전송</span>
+          </Button>
         </div>
       </div>
 

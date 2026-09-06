@@ -42,53 +42,71 @@ const DEFAULT_CHECKLIST: SubmissionCheckItem[] = [
     category: "PROPOSAL",
     isMandatory: true,
     isReady: false,
-    detail: "RFP 규격 및 제출 서식 준수, 첨부 증빙 포함 최종본",
+    detail: "RFP 규격 및 제출 서식 준수, 목차/페이지 번호 대조, 원본 및 증빙 첨부 최종본",
     assignee: "제안 PM",
   },
   {
     id: "sub-02",
-    name: "법인인감증명서 및 사용인감계 (최근 3개월 이내 발급분)",
-    category: "LEGAL",
+    name: "가격제안서 및 세부 산출내역서 (A값 고정비 반영)",
+    category: "FINANCE",
     isMandatory: true,
     isReady: false,
-    detail: "등기소 인감증명원 원본 스캔본 등록 및 인감 대조",
-    assignee: "경영지원팀",
+    detail: "A값(국민연금/건강보험/노인장기요양 등) 비투찰 고정비 반영 및 부가세 포함 금액 대조",
+    assignee: "재무팀",
   },
   {
     id: "sub-03",
-    name: "사업자등록증명원 & 중소기업확인서",
+    name: "사업자등록증명원 & 중소기업·소상공인확인서",
     category: "LEGAL",
     isMandatory: true,
     isReady: false,
-    detail: "국세청 홈택스 및 중소벤처기업부 발급 최신 유효본",
+    detail: "국세청 홈택스 및 중소벤처기업부 발급 최신 유효본 (유효기간 확인 필수)",
     assignee: "경영지원팀",
   },
   {
     id: "sub-04",
+    name: "법인인감증명서 및 사용인감계 (최근 3개월 이내 발급분)",
+    category: "LEGAL",
+    isMandatory: true,
+    isReady: false,
+    detail: "등기소 인감증명원 원본 스캔본 등록 및 사용인감 날인 대조",
+    assignee: "경영지원팀",
+  },
+  {
+    id: "sub-05",
+    name: "법인등기사항전부증명서 (말소사항 포함)",
+    category: "LEGAL",
+    isMandatory: true,
+    isReady: false,
+    detail: "대법원 인터넷등기소 최근 3개월 이내 발급분",
+    assignee: "경영지원팀",
+  },
+  {
+    id: "sub-06",
+    name: "국세 및 지방세 완납증명서 (체납 없음 확인)",
+    category: "FINANCE",
+    isMandatory: true,
+    isReady: false,
+    detail: "정부24 및 홈택스 발급분 (입찰일 기준 유효기간 내 증명서)",
+    assignee: "재무팀",
+  },
+  {
+    id: "sub-07",
     name: "주요 납품 실적증명원 (발주기관 관인 날인본)",
     category: "FINANCE",
     isMandatory: true,
     isReady: false,
-    detail: "유관 실적 증명서 발주처 관인 확인 및 첨부",
+    detail: "동등 이상 또는 유사 물품/용역 수행 실적 증명서 발주처 관인 확인 및 첨부",
     assignee: "사업개발팀",
   },
   {
-    id: "sub-05",
-    name: "보안서약서 및 청렴계약이행서약서 (대표자 직인)",
+    id: "sub-08",
+    name: "보안서약서 및 청렴계약이행서약서 (대표자 직인 날인)",
     category: "SECURITY",
     isMandatory: true,
     isReady: false,
-    detail: "대표이사 최종 서명 및 법인 직인 날인 확인",
+    detail: "공고문 별지 서식 대표이사 최종 서명 및 법인 직인 날인 확인",
     assignee: "규정준수팀",
-  },
-  {
-    id: "sub-06",
-    name: "전자투찰 파일 용량 및 형식 검사 (300MB 이하, PDF/HWP)",
-    category: "FORMAT",
-    isMandatory: true,
-    isReady: false,
-    detail: "공공조달 시스템 업로드 제한 규격 및 파일 무결성 검증",
-    assignee: "제출 담당자",
   },
 ];
 
@@ -277,12 +295,32 @@ export default function SubmissionsPage() {
       {/* 3. Checklist Table */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base font-bold flex items-center justify-between">
-            <span>제출 필수 서류 및 검증 항목 체크리스트</span>
-            <span className="text-xs text-muted-foreground font-normal">
-              클릭하여 준비 완료 상태를 토글할 수 있습니다.
-            </span>
-          </CardTitle>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div>
+              <CardTitle className="text-base font-bold">제출 필수 서류 및 검증 항목 체크리스트</CardTitle>
+              <CardDescription className="text-xs">
+                공공입찰 8대 표준 제출 서류의 서명/날인/유효기간 무결성을 점검합니다.
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-1.5 self-start sm:self-auto">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-[11px] px-2"
+                onClick={() => setChecklist((prev) => prev.map((it) => ({ ...it, isReady: false })))}
+              >
+                전체 초기화
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-[11px] px-2 text-primary"
+                onClick={() => setChecklist((prev) => prev.map((it) => ({ ...it, isReady: true })))}
+              >
+                전체 확인완료
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           <div className="divide-y divide-border/60 text-xs">

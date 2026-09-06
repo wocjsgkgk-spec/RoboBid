@@ -13,6 +13,7 @@ import {
   Calendar,
   Building,
   CheckCircle2,
+  Download,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -127,6 +128,21 @@ export default function CapabilityVaultPage() {
     }
   };
 
+  const handleExportJson = () => {
+    if (capabilities.length === 0) {
+      toast.error("내보낼 역량 자산이 없습니다.");
+      return;
+    }
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(capabilities, null, 2));
+    const downloadAnchor = document.createElement("a");
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `robobid_capability_vault_${new Date().toISOString().split("T")[0]}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+    toast.success("역량 자산 데이터가 JSON 파일로 다운로드되었습니다.");
+  };
+
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
@@ -182,7 +198,17 @@ export default function CapabilityVaultPage() {
             특허, 인증서, TRL 기술자산, 납품실적, 결산 재무제표 등 공모 제안서 RAG 인용과 가점 평가의 원천 근거를 관리합니다.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportJson}
+            disabled={capabilities.length === 0}
+            className="gap-1.5 text-xs h-9"
+          >
+            <Download className="h-4 w-4" />
+            JSON 백업 내보내기
+          </Button>
           <Button
             variant="outline"
             size="sm"

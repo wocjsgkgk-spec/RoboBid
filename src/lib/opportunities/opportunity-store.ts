@@ -172,6 +172,7 @@ export class OpportunityStore {
       postedAt?: string;
       submissionDeadline: string;
       canonicalUrl?: string | null;
+      providerId?: string;
     }>
   ): Opportunity[] {
     const upserted: Opportunity[] = [];
@@ -189,6 +190,7 @@ export class OpportunityStore {
           estimatedPrice: p.estimatedPrice !== undefined ? p.estimatedPrice : existing.estimatedPrice,
           submissionDeadline: p.submissionDeadline,
           canonicalUrl: p.canonicalUrl || existing.canonicalUrl,
+          providerId: p.providerId || existing.providerId,
           currentVersion: (existing.currentVersion || 1) + 1,
           updatedAt: new Date().toISOString(),
         };
@@ -199,7 +201,7 @@ export class OpportunityStore {
         const newOpp: Opportunity = {
           id,
           organizationId: DEFAULT_ORGANIZATION_ID,
-          providerId: "koneps",
+          providerId: p.providerId || "koneps",
           sourceId: p.sourceId,
           title: p.title,
           announcingAgency: p.announcingAgency,

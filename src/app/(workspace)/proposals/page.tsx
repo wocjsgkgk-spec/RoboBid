@@ -31,6 +31,7 @@ export default function ProposalsPage() {
   const [newAgency, setNewAgency] = useState("");
   const [newDeadline, setNewDeadline] = useState("");
   const [creating, setCreating] = useState(false);
+  const [rfpHandoff, setRfpHandoff] = useState<any | null>(null);
 
   const fetchProposals = async () => {
     try {
@@ -50,7 +51,57 @@ export default function ProposalsPage() {
 
   useEffect(() => {
     fetchProposals();
+    try {
+      const saved = localStorage.getItem("robobid_rfp_handoff");
+      if (saved) {
+        setRfpHandoff(JSON.parse(saved));
+      }
+    } catch (e) {
+      console.error("Failed to parse RFP handoff:", e);
+    }
   }, []);
+
+  const handleCreateFromRfpHandoff = async () => {
+    if (!rfpHandoff) return;
+    setCreating(true);
+    const opp: Partial<Opportunity> = {
+      id: rfpHandoff.opportunityId || crypto.randomUUID(),
+      organizationId: "org-robobid-default",
+      providerId: "RFP_TRANSFER",
+      sourceId: `rfp-${Date.now()}`,
+      title: rfpHandoff.title,
+      announcingAgency: rfpHandoff.announcingAgency,
+      bidType: rfpHandoff.bidType || "R_AND_D",
+      allocatedBudget: rfpHandoff.allocatedBudget,
+      submissionDeadline: rfpHandoff.submissionDeadline || new Date(Date.now() + 30 * 86400000).toISOString(),
+      primaryDomain: "ROBOT",
+      status: "GO",
+      postedAt: new Date().toISOString(),
+      contentHash: `hash-rfp-${Date.now()}`,
+      currentVersion: 1,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    try {
+      const res = await fetch("/api/proposals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ opportunity: opp, requirements: rfpHandoff.requirements }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setProposals((prev) => [data.proposal, ...prev]);
+        setSelectedProposal(data.proposal);
+        localStorage.removeItem("robobid_rfp_handoff");
+        setRfpHandoff(null);
+      }
+    } catch (err) {
+      console.error("Failed to create proposal from RFP handoff:", err);
+    } finally {
+      setCreating(false);
+    }
+  };
 
   const handleCreateProposal = async () => {
     if (!newTitle.trim()) return;
@@ -287,6 +338,52 @@ export default function ProposalsPage() {
           </Button>
         </div>
       </div>
+
+      {/* RFP Requirements Handoff Banner */}
+      {rfpHandoff && (
+        <div className="p-4 rounded-xl border border-primary/40 bg-primary/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm animate-in fade-in">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+              <Sparkles className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-foreground text-sm">
+                  RFP 분석에서 요구사항 데이터가 전달되었습니다
+                </span>
+                <Badge variant="outline" className="text-[10px] text-primary border-primary/30">
+                  요구사항 {rfpHandoff.requirements?.length || 0}건
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                [{rfpHandoff.announcingAgency}] {rfpHandoff.title}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs text-muted-foreground h-8"
+              onClick={() => {
+                localStorage.removeItem("robobid_rfp_handoff");
+                setRfpHandoff(null);
+              }}
+            >
+              닫기
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleCreateFromRfpHandoff}
+              disabled={creating}
+              className="text-xs font-bold gap-1.5 h-8 bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              <span>{creating ? "생성 중..." : "인계 데이터로 제안서 생성"}</span>
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* 2. Proposal List */}
       {proposals.length > 0 ? (

@@ -351,29 +351,54 @@ export default function TodayPage() {
           </CardHeader>
           <CardContent className="pt-3">
             <div className="space-y-2.5">
-              {opportunities.slice(0, 2).map((opp) => (
-                <div
-                  key={opp.id}
-                  className="p-3 rounded-lg border bg-card/60 flex items-center justify-between gap-3 text-xs"
-                >
-                  <div className="flex flex-col gap-0.5">
-                    <span className="font-semibold text-foreground line-clamp-1">{opp.title}</span>
-                    <span className="text-[11px] text-muted-foreground">
-                      {opp.announcingAgency} · 예산 {(opp.allocatedBudget || 0).toLocaleString()}원
-                    </span>
+              {(imminentDeadlines.length > 0 ? imminentDeadlines : opportunities).slice(0, 3).map((opp) => {
+                const diffDays = Math.ceil(
+                  (new Date(opp.submissionDeadline).getTime() - Date.now()) / (1000 * 3600 * 24)
+                );
+                const displayDays = diffDays >= 0 ? `D-${diffDays}` : "마감완료";
+                return (
+                  <div
+                    key={opp.id}
+                    className="p-3 rounded-lg border bg-card/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                  >
+                    <div className="flex flex-col gap-0.5 min-w-0">
+                      <span className="font-semibold text-foreground line-clamp-1">{opp.title}</span>
+                      <span className="text-[11px] text-muted-foreground">
+                        {opp.announcingAgency} · 예산 {(opp.allocatedBudget || 0).toLocaleString()}원
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
+                      <span className="text-[10px] font-mono px-2 py-0.5 bg-destructive/10 text-destructive font-bold rounded">
+                        {displayDays}
+                      </span>
+                      <Link href="/submissions">
+                        <Button variant="outline" size="sm" className="h-7 text-xs px-2" title="제출 마감 점검">
+                          제출
+                        </Button>
+                      </Link>
+                      <Link href="/rfp">
+                        <Button variant="outline" size="sm" className="h-7 text-xs px-2 text-primary" title="RFP 요구사항 분석">
+                          RFP
+                        </Button>
+                      </Link>
+                      <Link href="/tools">
+                        <Button variant="outline" size="sm" className="h-7 text-xs px-2 text-amber-600" title="A값 투찰금액 계산">
+                          투찰
+                        </Button>
+                      </Link>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-[10px] font-mono px-2 py-0.5 bg-destructive/10 text-destructive font-bold rounded">
-                      D-5 마감
-                    </span>
-                    <Link href="/submissions">
-                      <Button variant="outline" size="sm" className="h-7 text-xs px-2.5">
-                        제출 체크
-                      </Button>
-                    </Link>
-                  </div>
+                );
+              })}
+              {opportunities.length === 0 && (
+                <div className="p-4 text-center text-xs text-muted-foreground">
+                  현재 등록된 공모가 없습니다.{" "}
+                  <Link href="/opportunities" className="text-primary underline">
+                    공모 관리에서 수집
+                  </Link>
+                  하세요.
                 </div>
-              ))}
+              )}
             </div>
           </CardContent>
         </Card>
