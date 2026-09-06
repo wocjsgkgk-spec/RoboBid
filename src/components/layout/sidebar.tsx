@@ -26,6 +26,7 @@ import {
   Command,
   Database,
   Filter,
+  BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -62,8 +63,9 @@ const KNOWLEDGE_ITEMS: NavItem[] = [
 
 // 4. 지원 & 설정 (Support & Settings)
 const SUPPORT_ITEMS: NavItem[] = [
+  { href: "/guide", label: "시스템 사용 가이드", icon: BookOpen, highlight: true },
   { href: "/tools", label: "투찰 계산도구", icon: Calculator },
-  { href: "/ai", label: "RoboBid AI 코파일럿", icon: Bot, highlight: true },
+  { href: "/ai", label: "RoboBid AI 코파일럿", icon: Bot },
   { href: "/notifications", label: "알림 센터", icon: Bell },
   { href: "/settings", label: "설정 & Admin", icon: Settings },
 ];
