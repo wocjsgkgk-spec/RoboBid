@@ -138,13 +138,13 @@ async function handleLiveTest(
 
   try {
     switch (providerId) {
-      case "koneps": {
+        case "koneps": {
         const key = testKey || process.env.DATA_GO_KR_SERVICE_KEY;
         if (!key) {
           return NextResponse.json({
             success: false,
             status: "KEY_MISSING",
-            message: "공공데이터포털 서비스키가 입력되지 않았습니다.",
+            message: "공공데이터포털 일반 인증키가 입력되지 않았습니다.",
           });
         }
         // Test call to KONEPS open data ping
@@ -157,7 +157,7 @@ async function handleLiveTest(
           process.env.DATA_GO_KR_SERVICE_KEY = orig;
 
           return NextResponse.json({
-            success: health.status === "CONNECTED",
+            success: health.status === "CONNECTED" || health.status === "RATE_LIMITED",
             status: health.status,
             latencyMs: health.latencyMs || Date.now() - startTime,
             message: health.message,

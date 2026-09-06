@@ -18,7 +18,7 @@ interface HeaderProps {
 export function Header({
   userEmail = "demo@robobid.ai",
   userRole = "BID_MANAGER",
-  orgName = "RoboTech Inc.",
+  orgName = "내 기업",
   onLogout,
 }: HeaderProps) {
   const { theme, setTheme } = useTheme();

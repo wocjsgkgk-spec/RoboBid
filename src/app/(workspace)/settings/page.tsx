@@ -16,7 +16,9 @@ import {
   Sparkles,
   Bot,
   Zap,
+  Award,
 } from "lucide-react";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -401,27 +403,30 @@ export default function SettingsPage() {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-bold">회사 프로필 & 적격심사 기본값</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-bold">회사 프로필 & 적격심사 기준</CardTitle>
+              <Badge variant="outline" className="text-[10px] text-muted-foreground border-border/80">
+                클린 상태 (미등록)
+              </Badge>
+            </div>
             <CardDescription className="text-xs">
-              공공조달 적격심사 가점 및 지원자격(Eligibility) 자동 매칭의 기준이 됩니다.
+              공공조달 적격심사 가점 및 지원자격(Eligibility) 자동 매칭의 기준이 되는 사내 프로필입니다.
             </CardDescription>
           </CardHeader>
-          <CardContent className="text-xs space-y-2 pt-1">
-            <div className="flex justify-between py-1 border-b">
-              <span className="text-muted-foreground">기업명 및 규모</span>
-              <span className="font-semibold text-foreground">RoboTech Inc. (중소기업 / SME)</span>
-            </div>
-            <div className="flex justify-between py-1 border-b">
-              <span className="text-muted-foreground">본사 소재지</span>
-              <span className="font-semibold text-foreground">대구광역시 (비수도권 지역가점 대상)</span>
-            </div>
-            <div className="flex justify-between py-1 border-b">
-              <span className="text-muted-foreground">기술 성숙도</span>
-              <span className="font-mono text-primary font-bold">TRL 7단계 (실증 시제품 운영)</span>
-            </div>
-            <div className="flex justify-between py-1">
-              <span className="text-muted-foreground">신인도 가점 자산</span>
-              <span className="text-emerald-600 font-semibold">이노비즈 AA등급, 특허 3건, ISO 9001</span>
+          <CardContent className="text-xs space-y-3 pt-2">
+            <div className="rounded-lg border border-dashed border-border/80 bg-muted/20 p-4 text-center">
+              <Award className="h-6 w-6 text-muted-foreground/60 mx-auto mb-2" />
+              <p className="font-medium text-foreground text-xs">등록된 기업 프로필이 없습니다 (클린 상태 유지 중)</p>
+              <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                사내 기본정보, TRL 기술단계, 특허·인증 자산을 증빙 볼트에 등록하시면 AI 적격심사 가점 시뮬레이션과 공모 매칭에 자동 반영됩니다.
+              </p>
+              <div className="mt-3 flex justify-center gap-2">
+                <Link href="/vault">
+                  <Button size="sm" variant="outline" className="text-xs h-7 gap-1">
+                    증빙 볼트에서 기업 자산 등록하기
+                  </Button>
+                </Link>
+              </div>
             </div>
           </CardContent>
         </Card>
