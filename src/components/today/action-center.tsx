@@ -17,6 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { isTargetRobotFundingOpportunity } from "@/lib/funding/target-domain-filter";
 
 interface ActionCenterProps {
   actionItems: TodayActionItem[];
@@ -24,24 +25,13 @@ interface ActionCenterProps {
 }
 
 export function ActionCenter({ actionItems, onActionClick }: ActionCenterProps) {
-  // RoboBid AI v3.0: 순수 정부 지원금 및 로봇 개발 과제만 노출 (단순 용역/인력파견/적격심사 배제)
+  // RoboBid AI v3.0: 순수 로봇 R&D/하드웨어만 노출 (성과분석, 동향, 컨설팅, 용역 원천 배제)
   const fundingOnlyItems = actionItems.filter((item) => {
-    const text = `${item.title || ""} ${item.description || ""} ${item.opportunityTitle || ""}`.toLowerCase();
-    if (
-      text.includes("용역") ||
-      text.includes("컨설팅") ||
-      text.includes("자문") ||
-      text.includes("멘토링") ||
-      text.includes("인력") ||
-      text.includes("청소") ||
-      text.includes("경비") ||
-      text.includes("유지관리") ||
-      text.includes("적격심사") ||
-      text.includes("마케팅")
-    ) {
-      return false;
-    }
-    return true;
+    return isTargetRobotFundingOpportunity({
+      title: item.title,
+      summary: item.description,
+      primaryDomain: item.opportunityTitle || "ROBOT",
+    });
   });
 
   // Sort priority: CRITICAL first, then HIGH, then NORMAL

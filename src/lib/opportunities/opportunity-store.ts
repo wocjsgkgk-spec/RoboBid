@@ -8,6 +8,7 @@ import { SAMPLE_OPPORTUNITIES } from "../today/sample-scenarios";
 import { DecisionService } from "../decision/decision-service";
 import { BidDecision, DecisionType } from "@/types/decision";
 import { FundingTaxonomyService } from "../funding/funding-taxonomy-service";
+import { isTargetRobotFundingOpportunity } from "../funding/target-domain-filter";
 
 export interface CreateManualOpportunityInput {
   title: string;
@@ -48,7 +49,9 @@ export class OpportunityStore {
           const list: Opportunity[] = JSON.parse(cached);
           if (Array.isArray(list)) {
             for (const item of list) {
-              this.opportunities.set(item.id, item);
+              if (isTargetRobotFundingOpportunity(item)) {
+                this.opportunities.set(item.id, item);
+              }
             }
           }
         }
@@ -118,9 +121,9 @@ export class OpportunityStore {
   }
 
   public getAll(): Opportunity[] {
-    return Array.from(this.opportunities.values()).map((o) =>
-      FundingTaxonomyService.enrichOpportunity(o)
-    );
+    return Array.from(this.opportunities.values())
+      .filter((o) => isTargetRobotFundingOpportunity(o))
+      .map((o) => FundingTaxonomyService.enrichOpportunity(o));
   }
 
   public getById(id: string): Opportunity | undefined {
@@ -250,6 +253,9 @@ export class OpportunityStore {
   ): Opportunity[] {
     const upserted: Opportunity[] = [];
     for (const p of payloads) {
+      if (!isTargetRobotFundingOpportunity(p)) {
+        continue;
+      }
       const existing = Array.from(this.opportunities.values()).find(
         (o) => o.sourceId === p.sourceId
       );
