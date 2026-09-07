@@ -12,6 +12,7 @@ import {
   Percent,
   X,
   ShieldCheck,
+  Scale,
 } from "lucide-react";
 import {
   KonepsPricingCalculator,
@@ -19,6 +20,7 @@ import {
 } from "@/lib/bidding/koneps-pricing-calculator";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { FormulaGuideDialog } from "./formula-guide-dialog";
 
 interface KonepsPricingModalProps {
   isOpen: boolean;
@@ -39,6 +41,7 @@ export function KonepsPricingModal({
   const [roundingMethod, setRoundingMethod] = useState<"CEIL" | "ROUND" | "FLOOR">("CEIL");
   const [selectedIndices, setSelectedIndices] = useState<number[]>([2, 5, 9, 13]);
   const [copied, setCopied] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
 
   // 시뮬레이션 계산 결과
   const result: BiddingPriceSimulationResult = useMemo(() => {
@@ -108,12 +111,23 @@ export function KonepsPricingModal({
               <p className="text-xs text-muted-foreground line-clamp-1">{initialTitle}</p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="rounded-lg p-2 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-          >
-            <X className="h-5 w-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setGuideOpen(true)}
+              className="text-xs h-8 px-2.5 gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
+            >
+              <Scale className="h-3.5 w-3.5" />
+              <span>A값 산식·규정</span>
+            </Button>
+            <button
+              onClick={onClose}
+              className="rounded-lg p-2 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
 
         {/* Modal Body */}
@@ -402,6 +416,8 @@ export function KonepsPricingModal({
           </Button>
         </div>
       </div>
+
+      <FormulaGuideDialog open={guideOpen} onOpenChange={setGuideOpen} defaultCategory="A_VALUE" />
     </div>
   );
 }

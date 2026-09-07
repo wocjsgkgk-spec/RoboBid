@@ -62,7 +62,7 @@ const KNOWLEDGE_ITEMS: NavItem[] = [
 
 // 4. 지원 & 설정 (Support & Settings)
 const SUPPORT_ITEMS: NavItem[] = [
-  { href: "/tools", label: "투찰 계산도구", icon: Calculator },
+  { href: "/tools", label: "계산도구 & 산식·규정", icon: Calculator, badge: "산식백서" },
   { href: "/ai", label: "RoboBid AI 코파일럿", icon: Bot, highlight: true },
   { href: "/notifications", label: "알림 센터", icon: Bell },
   { href: "/settings", label: "설정 & Admin", icon: Settings },

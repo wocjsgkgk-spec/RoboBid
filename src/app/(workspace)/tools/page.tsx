@@ -13,11 +13,13 @@ import {
   Users2,
   PieChart,
   Percent,
+  Scale,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { QualificationChecklistCard } from "@/components/bidding/qualification-checklist-card";
+import { BidopsFormulaGuide } from "@/components/bidding/bidops-formula-guide";
 import {
   KonepsPricingCalculator,
   BiddingPriceSimulationResult,
@@ -35,7 +37,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 
 export default function ToolsPage() {
-  const [activeTab, setActiveTab] = useState<"KONEPS" | "QUALIFICATION" | "RND_BUDGET">("KONEPS");
+  const [activeTab, setActiveTab] = useState<"KONEPS" | "QUALIFICATION" | "RND_BUDGET" | "FORMULA_GUIDE">("KONEPS");
 
   // KONEPS Pricing State
   const [basePrice, setBasePrice] = useState<number>(500000000);
@@ -184,6 +186,18 @@ export default function ToolsPage() {
         >
           <DollarSign className="h-4 w-4" />
           <span>R&D 사업비 & 자기부담금 시뮬레이터</span>
+        </Button>
+        <Button
+          variant={activeTab === "FORMULA_GUIDE" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setActiveTab("FORMULA_GUIDE")}
+          className="text-xs gap-1.5 font-bold"
+        >
+          <Scale className="h-4 w-4 text-primary" />
+          <span>산식·근거·법정규정 백서</span>
+          <Badge variant="outline" className="text-[10px] ml-1 bg-primary/10 text-primary border-primary/30">
+            필수 확인
+          </Badge>
         </Button>
       </div>
 
@@ -506,6 +520,9 @@ export default function ToolsPage() {
           </Card>
         </div>
       )}
+
+      {/* TAB 4: Formula & Regulations Guide */}
+      {activeTab === "FORMULA_GUIDE" && <BidopsFormulaGuide />}
 
       {/* Apply to Pipeline Dialog */}
       <Dialog open={applyDialogOpen} onOpenChange={setApplyDialogOpen}>

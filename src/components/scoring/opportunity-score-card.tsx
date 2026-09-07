@@ -1,16 +1,20 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { OpportunityScoreResult } from "@/types/scoring";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, AlertCircle, ShieldAlert, CheckCircle2, TrendingUp, Info } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Sparkles, AlertCircle, ShieldAlert, CheckCircle2, TrendingUp, Info, Scale } from "lucide-react";
+import { FormulaGuideDialog } from "@/components/bidding/formula-guide-dialog";
 
 interface OpportunityScoreCardProps {
   score: OpportunityScoreResult;
 }
 
 export function OpportunityScoreCard({ score }: OpportunityScoreCardProps) {
+  const [guideOpen, setGuideOpen] = useState(false);
+
   const getRecommendationBadge = (rec: OpportunityScoreResult["recommendation"]) => {
     switch (rec) {
       case "GO":
@@ -31,29 +35,41 @@ export function OpportunityScoreCard({ score }: OpportunityScoreCardProps) {
   };
 
   return (
-    <Card className="shadow-sm">
-      <CardHeader className="pb-3 border-b">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <CardTitle className="text-base font-bold">
-                RoboBid 기회 점수 (Opportunity Score)
-              </CardTitle>
-              {getRecommendationBadge(score.recommendation)}
+    <>
+      <Card className="shadow-sm">
+        <CardHeader className="pb-3 border-b">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-base font-bold">
+                  RoboBid 기회 점수 (Opportunity Score)
+                </CardTitle>
+                {getRecommendationBadge(score.recommendation)}
+              </div>
+              <CardDescription className="text-xs mt-1">
+                정량 룰과 사내 보유 역량을 기반으로 계산된 종합 기회 가치 지표입니다.
+              </CardDescription>
             </div>
-            <CardDescription className="text-xs mt-1">
-              정량 룰과 사내 보유 역량을 기반으로 계산된 종합 기회 가치 지표입니다.
-            </CardDescription>
+            {/* Big Score Number and Guide Button */}
+            <div className="flex items-center gap-4">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setGuideOpen(true)}
+                className="text-xs h-8 px-2.5 gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
+              >
+                <Scale className="h-3.5 w-3.5" />
+                <span>산식·규정 확인</span>
+              </Button>
+              <div className="flex items-baseline gap-1">
+                <span className={`text-4xl font-extrabold tracking-tight ${getScoreColor(score.totalScore)}`}>
+                  {score.totalScore}
+                </span>
+                <span className="text-xs text-muted-foreground font-semibold">/ 100점</span>
+              </div>
+            </div>
           </div>
-          {/* Big Score Number */}
-          <div className="flex items-baseline gap-1">
-            <span className={`text-4xl font-extrabold tracking-tight ${getScoreColor(score.totalScore)}`}>
-              {score.totalScore}
-            </span>
-            <span className="text-xs text-muted-foreground font-semibold">/ 100점</span>
-          </div>
-        </div>
-      </CardHeader>
+        </CardHeader>
 
       <CardContent className="pt-4 space-y-5">
         {/* Strictly Required Notice: Score != Win Probability */}
@@ -137,5 +153,8 @@ export function OpportunityScoreCard({ score }: OpportunityScoreCardProps) {
         </div>
       </CardContent>
     </Card>
+
+    <FormulaGuideDialog open={guideOpen} onOpenChange={setGuideOpen} defaultCategory="FIT_SCORE" />
+  </>
   );
 }
