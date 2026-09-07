@@ -54,7 +54,14 @@ export default function OpportunitiesPage() {
   const [syncModalOpen, setSyncModalOpen] = useState(false);
 
   // Sync Modal State
-  const [syncSources, setSyncSources] = useState<string[]>(["koneps", "bizinfo"]);
+  const [syncSources, setSyncSources] = useState<string[]>([
+    "iris",
+    "k_startup",
+    "kiria_keit",
+    "koneps",
+    "bizinfo",
+    "subsidy",
+  ]);
   const [syncKeyword, setSyncKeyword] = useState("로봇");
   const [syncFallbackAllowed, setSyncFallbackAllowed] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -879,46 +886,106 @@ export default function OpportunitiesPage() {
 
             <div className="space-y-3">
               <div>
-                <label className="block text-muted-foreground font-medium mb-1">
-                  수집 대상 공공 채널 선택
-                </label>
-                <div className="space-y-1.5 p-3 rounded-lg border bg-muted/20">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={syncSources.includes("koneps")}
-                      onChange={(e) => {
-                        if (e.target.checked) setSyncSources([...syncSources, "koneps"]);
-                        else setSyncSources(syncSources.filter((s) => s !== "koneps"));
-                      }}
-                      className="rounded border-input text-primary focus:ring-primary"
-                    />
-                    <span className="font-semibold text-foreground">조달청 나라장터 (KONEPS 입찰공고)</span>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-muted-foreground font-medium text-xs">
+                    수집 대상 공공 채널 선택 ({syncSources.length}/6개 활성화)
                   </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={syncSources.includes("bizinfo")}
-                      onChange={(e) => {
-                        if (e.target.checked) setSyncSources([...syncSources, "bizinfo"]);
-                        else setSyncSources(syncSources.filter((s) => s !== "bizinfo"));
-                      }}
-                      className="rounded border-input text-primary focus:ring-primary"
-                    />
-                    <span className="font-semibold text-foreground">중소벤처기업부 기업마당 (Bizinfo 지원사업)</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer opacity-75">
-                    <input
-                      type="checkbox"
-                      checked={syncSources.includes("iris")}
-                      onChange={(e) => {
-                        if (e.target.checked) setSyncSources([...syncSources, "iris"]);
-                        else setSyncSources(syncSources.filter((s) => s !== "iris"));
-                      }}
-                      className="rounded border-input text-primary focus:ring-primary"
-                    />
-                    <span className="text-foreground">범부처연구비통합관리시스템 (IRIS R&D)</span>
-                  </label>
+                  <div className="flex gap-2 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setSyncSources(["iris", "k_startup", "kiria_keit", "koneps", "bizinfo", "subsidy"])}
+                      className="text-primary hover:underline"
+                    >
+                      전체 선택
+                    </button>
+                    <span className="text-muted-foreground">|</span>
+                    <button
+                      type="button"
+                      onClick={() => setSyncSources([])}
+                      className="text-muted-foreground hover:underline"
+                    >
+                      전체 해제
+                    </button>
+                  </div>
+                </div>
+                <div className="space-y-2 p-3 rounded-lg border bg-muted/20 max-h-60 overflow-y-auto">
+                  {[
+                    {
+                      id: "iris",
+                      name: "범부처통합연구지원시스템 (IRIS)",
+                      badge: "국가 R&D",
+                      badgeColor: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
+                      desc: "과기정통부·산업부·중기부 국가 R&D 연구개발과제",
+                    },
+                    {
+                      id: "k_startup",
+                      name: "모두의 창업 / K-Startup",
+                      badge: "딥테크 R&D",
+                      badgeColor: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
+                      desc: "중소벤처기업부·창업진흥원 딥테크 TIPS 및 로봇 H/W 기술창업",
+                    },
+                    {
+                      id: "kiria_keit",
+                      name: "한국로봇산업진흥원(KIRIA) & KEIT",
+                      badge: "로봇특화",
+                      badgeColor: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300",
+                      desc: "로봇 핵심부품 국산화 R&D 및 제조로봇 실증보조 지원사업",
+                    },
+                    {
+                      id: "koneps",
+                      name: "조달청 나라장터 (KONEPS)",
+                      badge: "공공조달",
+                      badgeColor: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+                      desc: "조달청 물품·기술용역 입찰 및 혁신제품 시범구매 실증",
+                    },
+                    {
+                      id: "bizinfo",
+                      name: "중소벤처기업부 기업마당 (Bizinfo)",
+                      badge: "정부지원",
+                      badgeColor: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300",
+                      desc: "중기부 및 산하기관 스마트제조·기술혁신개발 공모사업",
+                    },
+                    {
+                      id: "subsidy",
+                      name: "국고보조금 e나라도움 / 보조금24",
+                      badge: "국고보조",
+                      badgeColor: "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300",
+                      desc: "스마트 제조혁신 및 공정 자동화 민관보조금 지원사업",
+                    },
+                  ].map((ch) => {
+                    const isChecked = syncSources.includes(ch.id);
+                    return (
+                      <label
+                        key={ch.id}
+                        className={`flex items-start gap-2.5 p-2 rounded-md border cursor-pointer transition-colors ${
+                          isChecked
+                            ? "bg-background/80 border-primary/40 shadow-xs"
+                            : "bg-transparent border-transparent opacity-60 hover:opacity-80"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={(e) => {
+                            if (e.target.checked) setSyncSources([...syncSources, ch.id]);
+                            else setSyncSources(syncSources.filter((s) => s !== ch.id));
+                          }}
+                          className="mt-0.5 rounded border-input text-primary focus:ring-primary"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-xs text-foreground">{ch.name}</span>
+                            <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded ${ch.badgeColor}`}>
+                              {ch.badge}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">
+                            {ch.desc}
+                          </p>
+                        </div>
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
 

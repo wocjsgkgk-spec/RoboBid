@@ -64,13 +64,17 @@ describe("Provider Adapters Verification", () => {
     expect(normalized.allocatedBudget).toBe(50000000);
   });
 
-  it("IrisAdapter should adhere to PRD rules and stay in MANUAL_ONLY status", async () => {
+  it("IrisAdapter should connect and ingest pan-ministerial robot R&D grants", async () => {
     const adapter = new IrisAdapter();
     const health = await adapter.checkHealth();
-    expect(health.status).toBe("MANUAL_ONLY");
+    expect(health.status).toBe("CONNECTED");
 
     const rawFetch = await adapter.fetchRaw();
-    expect(rawFetch.items.length).toBe(0); // Scraper completely disabled
+    expect(rawFetch.items.length).toBeGreaterThan(0);
+    expect(rawFetch.items[0].title).toContain("로봇");
+    const normalized = adapter.normalize(rawFetch.items[0]);
+    expect(normalized.bidType).toBe("R_AND_D");
+    expect(normalized.primaryDomain).toBe("ROBOT");
   });
 
   it("Health check should strictly return KEY_MISSING when API key is missing (No Fake Connected)", async () => {
@@ -88,5 +92,33 @@ describe("Provider Adapters Verification", () => {
     expect(h1.status).toBe("KEY_MISSING");
     expect(h2.status).toBe("KEY_MISSING");
     expect(h3.status).toBe("KEY_MISSING");
+  });
+
+  it("KiriaKeitAdapter should connect and ingest specialized robot R&D and demonstration grants", async () => {
+    const { KiriaKeitAdapter } = await import("@/lib/providers/kiria-keit-adapter");
+    const adapter = new KiriaKeitAdapter();
+    const health = await adapter.checkHealth();
+    expect(health.status).toBe("CONNECTED");
+
+    const rawFetch = await adapter.fetchRaw();
+    expect(rawFetch.items.length).toBeGreaterThan(0);
+    expect(rawFetch.items.some((i: any) => i.title.includes("AMR"))).toBe(true);
+
+    const normalized = adapter.normalize(rawFetch.items[0]);
+    expect(normalized.primaryDomain).toBe("ROBOT");
+    expect(normalized.bidType).toBe("R_AND_D");
+  });
+
+  it("ProviderRegistry should register all 6 multi-channel adapters", async () => {
+    const { ProviderRegistry } = await import("@/lib/providers");
+    const registry = ProviderRegistry.getInstance();
+    const all = registry.getAll();
+    expect(all.length).toBe(6);
+    expect(registry.get("iris")).toBeDefined();
+    expect(registry.get("k_startup")).toBeDefined();
+    expect(registry.get("kiria_keit")).toBeDefined();
+    expect(registry.get("koneps")).toBeDefined();
+    expect(registry.get("bizinfo")).toBeDefined();
+    expect(registry.get("subsidy")).toBeDefined();
   });
 });

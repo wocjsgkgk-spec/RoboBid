@@ -9,8 +9,8 @@ import { BidType } from "@/types";
 
 export class KStartupAdapter extends BaseProviderAdapter {
   readonly id = "k_startup";
-  readonly name = "K-Startup (창업진흥원)";
-  readonly sourceUrl = "https://www.data.go.kr/data/15083166/openapi.do";
+  readonly name = "모두의 창업 / K-Startup (창업진흥원·중기부)";
+  readonly sourceUrl = "https://www.k-startup.go.kr";
   readonly defaultBidType: BidType = "SUBSIDY_SUPPORT";
 
   private getServiceKey(): string | undefined {
@@ -146,25 +146,36 @@ export class KStartupAdapter extends BaseProviderAdapter {
     return [
       {
         post_sn: "KS-2026-001",
-        biz_pbanc_nm: "2026년도 초격차 스타트업 1000+ 프로젝트 (로봇·AI 신산업 육성사업)",
+        biz_pbanc_nm: "2026년도 초격차 스타트업 1000+ 프로젝트 (로봇·AI 딥테크 신산업 육성사업)",
         pbanc_ntce_instt_nm: "창업진흥원",
         supt_biz_instt_nm: "중소벤처기업부",
         pbanc_rcpt_bgng_dt: "2026-08-01",
         pbanc_rcpt_end_dt: "2026-10-31",
         supt_scale: 300000000,
         detl_pg_url: "https://www.k-startup.go.kr",
-        supt_biz_clsfc: "기술창업 지원금 및 스케일업 바우처",
+        supt_biz_clsfc: "기술창업 사업화 자금 및 시제품 제작 지원",
       },
       {
         post_sn: "KS-2026-002",
         biz_pbanc_nm: "2026년 창업도약패키지 지원사업 (딥테크 로봇·하드웨어 스케일업)",
-        pbanc_ntce_instt_nm: "한국수자원공사",
+        pbanc_ntce_instt_nm: "한국수자원공사 / 창업진흥원",
         supt_biz_instt_nm: "중소벤처기업부",
         pbanc_rcpt_bgng_dt: "2026-08-15",
         pbanc_rcpt_end_dt: "2026-10-15",
         supt_scale: 250000000,
         detl_pg_url: "https://www.k-startup.go.kr",
         supt_biz_clsfc: "도약기 스타트업 사업화 자금",
+      },
+      {
+        post_sn: "KS-2026-003",
+        biz_pbanc_nm: "2026 딥테크 팁스(Deep-Tech TIPS) 로봇·인공지능 하드웨어 기술사업화 R&D",
+        pbanc_ntce_instt_nm: "한국엔젤투자협회 / 창업진흥원",
+        supt_biz_instt_nm: "중소벤처기업부",
+        pbanc_rcpt_bgng_dt: "2026-07-01",
+        pbanc_rcpt_end_dt: "2026-11-30",
+        supt_scale: 500000000,
+        detl_pg_url: "https://www.k-startup.go.kr",
+        supt_biz_clsfc: "딥테크 창업기업 R&D 지원금",
       },
     ];
   }

@@ -27,7 +27,7 @@ async function handleCronIngest(req: NextRequest) {
     }
 
     const keyword = req.nextUrl.searchParams.get("keyword") || "로봇";
-    const sources = ["bizinfo", "koneps"];
+    const sources = ["koneps", "bizinfo", "iris", "k_startup", "subsidy", "kiria_keit"];
     const engine = new IngestionSyncEngine();
     const results: SyncRunResult[] = [];
     let totalUpsertedCount = 0;

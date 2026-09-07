@@ -4,6 +4,7 @@ import { KStartupAdapter } from "./k-startup-adapter";
 import { BizinfoAdapter } from "./bizinfo-adapter";
 import { SubsidyAdapter } from "./subsidy-adapter";
 import { IrisAdapter } from "./iris-adapter";
+import { KiriaKeitAdapter } from "./kiria-keit-adapter";
 
 export class ProviderRegistry {
   private static instance: ProviderRegistry;
@@ -15,6 +16,7 @@ export class ProviderRegistry {
     this.register(new BizinfoAdapter());
     this.register(new SubsidyAdapter());
     this.register(new IrisAdapter());
+    this.register(new KiriaKeitAdapter());
   }
 
   public static getInstance(): ProviderRegistry {
@@ -44,3 +46,5 @@ export * from "./k-startup-adapter";
 export * from "./bizinfo-adapter";
 export * from "./subsidy-adapter";
 export * from "./iris-adapter";
+export * from "./kiria-keit-adapter";
+

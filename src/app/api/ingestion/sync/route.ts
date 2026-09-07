@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
       ? body.sources
       : body.providerId
       ? [body.providerId]
-      : ["bizinfo", "koneps"];
+      : ["koneps", "bizinfo", "iris", "k_startup", "subsidy", "kiria_keit"];
     const keyword = (body.keyword as string) || "로봇";
     const fallbackToMock = body.fallbackToMock !== undefined ? Boolean(body.fallbackToMock) : false;
 
