@@ -1,13 +1,11 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { TrendingUp, Plus, RefreshCw, Layers, Sparkles } from 'lucide-react';
+import { TrendingUp, Plus, RefreshCw, Layers, Award } from 'lucide-react';
 import { OutcomeRecord, OutcomeAnalyticsSummary, BiasDiagnosisReport } from '@/types/outcome';
 import { OutcomeDashboard } from '@/components/learning/outcome-dashboard';
 import { OutcomeListView } from '@/components/learning/outcome-list-view';
 import { OutcomeFormModal } from '@/components/learning/outcome-form-modal';
-import { KonepsOpeningModal } from '@/components/learning/koneps-opening-modal';
-import { KonepsOpeningResult } from '@/types/koneps-opening';
 import { EmptyState } from '@/components/ui/empty-state';
 
 export default function LearningPage() {
@@ -19,7 +17,6 @@ export default function LearningPage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingOutcome, setEditingOutcome] = useState<OutcomeRecord | null>(null);
-  const [isOpeningModalOpen, setIsOpeningModalOpen] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -61,31 +58,6 @@ export default function LearningPage() {
     setIsModalOpen(true);
   };
 
-  const handleSelectOpeningResult = (result: KonepsOpeningResult, ourBidPrice?: number) => {
-    const isWin = result.resultStatus === 'SUCCESSFUL' && ourBidPrice && result.sucsfBidAmt && Math.abs(ourBidPrice - result.sucsfBidAmt) < 1000;
-    const prefilled: any = {
-      id: `outcome-koneps-${Date.now()}`,
-      opportunityId: result.bidNtceNo,
-      opportunityTitle: result.bidNtceNm,
-      agencyName: result.announcingAgency,
-      category: 'ROBOT',
-      status: isWin ? 'AWARDED' : 'REJECTED',
-      awardAmount: result.sucsfBidAmt || result.lwstBdrBidAmt || undefined,
-      competitorCount: result.totPrtcptBsnmCnt,
-      evaluationFeedback: `나라장터 개찰결과: 1순위 낙찰사 [${result.sucsfBdrBsnmNm || result.lwstBdrBsnmNm || '미정'}], 투찰률: ${result.sucsfBidRate || result.lwstBdrBidRate || '-'}%`,
-      internalPostmortem: ourBidPrice
-        ? `자사 투찰가: ${ourBidPrice.toLocaleString()}원 vs 1순위 투찰가: ${(result.sucsfBidAmt || 0).toLocaleString()}원 (오차: ${((ourBidPrice - (result.sucsfBidAmt || 0))).toLocaleString()}원)`
-        : '나라장터 개찰결과 데이터 연동',
-      successReasons: isWin ? ['투찰 하한선 및 A값 사상률 정밀 적중'] : [],
-      failureReasons: !isWin ? ['투찰가 편차 발생 (예가 사상률 오차)'] : [],
-      capabilityGaps: [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    setEditingOutcome(prefilled);
-    setIsModalOpen(true);
-  };
-
   return (
     <div className="space-y-6">
       {/* 헤더 */}
@@ -93,21 +65,14 @@ export default function LearningPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
             <TrendingUp className="w-6 h-6 text-primary" />
-            성과·학습 (Outcome Learning & Analytics)
+            공모 심사 성과 & 학습 분석 (Funding Outcome Analytics)
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            제출된 공모의 최종 선정/탈락 결과와 심사위원 피드백을 축적하여 스코어링 모델의 신뢰도를 실증 검증합니다.
+            정부 R&D 및 로봇 지원사업 공모의 서면평가·발표평가 점수와 심사위원 피드백을 축적하여 선정률 및 스코어링 모델의 정밀도를 향상합니다.
           </p>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          <button
-            onClick={() => setIsOpeningModalOpen(true)}
-            className="px-3.5 py-2 border border-primary/30 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg font-medium flex items-center gap-1.5 text-sm shadow-sm transition-all"
-          >
-            <Sparkles className="w-4 h-4 text-primary" />
-            <span>나라장터 개찰결과 조회</span>
-          </button>
           <button
             onClick={fetchData}
             disabled={loading}
@@ -121,7 +86,7 @@ export default function LearningPage() {
             className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 font-medium flex items-center gap-2 text-sm shadow-sm"
           >
             <Plus className="w-4 h-4" />
-            <span>지원 결과 등록</span>
+            <span>공모 심사 결과 등록</span>
           </button>
         </div>
       </div>
@@ -129,7 +94,7 @@ export default function LearningPage() {
       {loading && (
         <div className="p-12 text-center text-muted-foreground border rounded-xl bg-card">
           <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-primary" />
-          <span>성과 분석 데이터를 불러오는 중입니다...</span>
+          <span>공모 성과 분석 데이터를 불러오는 중입니다...</span>
         </div>
       )}
 
@@ -143,8 +108,8 @@ export default function LearningPage() {
         <div className="rounded-xl border bg-card shadow-sm p-6">
           <EmptyState
             icon={TrendingUp}
-            title="축적된 입찰 결과 데이터가 없습니다"
-            description="실제 사업계획서 제출 및 선정/탈락 결과가 기록된 이후, 통계적 승률 및 심사위원 피드백 분석 보고서가 제공됩니다."
+            title="축적된 공모 심사 결과 데이터가 없습니다"
+            description="실제 사업계획서 제출 후 서면평가 또는 발표평가 결과(선정/탈락)를 등록하면, 심사위원 종합의견 및 가점 획득 요인 분석 보고서가 제공됩니다."
           />
           <div className="mt-4 flex justify-center">
             <button
@@ -152,7 +117,7 @@ export default function LearningPage() {
               className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 font-medium text-sm flex items-center gap-2"
             >
               <Plus className="w-4 h-4" />
-              <span>첫 지원 결과 등록하기</span>
+              <span>첫 공모 심사 결과 등록하기</span>
             </button>
           </div>
         </div>
@@ -178,12 +143,6 @@ export default function LearningPage() {
         onClose={() => setIsModalOpen(false)}
         outcome={editingOutcome}
         onSuccess={fetchData}
-      />
-
-      <KonepsOpeningModal
-        open={isOpeningModalOpen}
-        onOpenChange={setIsOpeningModalOpen}
-        onSelectResult={handleSelectOpeningResult}
       />
     </div>
   );

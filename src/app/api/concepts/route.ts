@@ -59,3 +59,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }
+
+export async function DELETE(req: NextRequest) {
+  try {
+    projectConceptStore.clearAll();
+    return NextResponse.json({
+      success: true,
+      message: "모든 로봇 개발 기획 데이터가 초기화되었습니다.",
+    });
+  } catch (err: any) {
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  }
+}

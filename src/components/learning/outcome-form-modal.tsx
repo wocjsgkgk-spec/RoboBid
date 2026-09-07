@@ -230,7 +230,7 @@ export const OutcomeFormModal: React.FC<OutcomeFormModalProps> = ({
                 className="w-full border rounded-lg px-3 py-2 bg-background font-semibold"
               >
                 <option value="SUBMITTED">제출 완료 (심사중)</option>
-                <option value="AWARDED">최종 선정 (수주 확정)</option>
+                <option value="AWARDED">최종 선정 (협약 체결)</option>
                 <option value="REJECTED">탈락 (미선정)</option>
                 <option value="WITHDRAWN">철회 (지원 취소)</option>
               </select>
@@ -249,14 +249,14 @@ export const OutcomeFormModal: React.FC<OutcomeFormModalProps> = ({
               />
             </div>
             <div>
-              <label className="block font-medium mb-1">최종 수주액 (원)</label>
+              <label className="block font-medium mb-1">확정 지원금 (원)</label>
               <input
                 type="number"
                 step="1000000"
                 min="0"
                 value={awardAmount}
                 onChange={(e) => setAwardAmount(e.target.value)}
-                placeholder="선정 시 협약금액"
+                placeholder="선정 시 최종 협약 지원금"
                 className="w-full border rounded-lg px-3 py-2 bg-background"
               />
             </div>
@@ -264,7 +264,7 @@ export const OutcomeFormModal: React.FC<OutcomeFormModalProps> = ({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block font-medium mb-1">경쟁사 수 (입찰 참여사)</label>
+              <label className="block font-medium mb-1">경쟁사 수 (공모 신청기업 수)</label>
               <input
                 type="number"
                 min="1"
@@ -293,7 +293,7 @@ export const OutcomeFormModal: React.FC<OutcomeFormModalProps> = ({
               rows={2}
               value={evaluationFeedback}
               onChange={(e) => setEvaluationFeedback(e.target.value)}
-              placeholder="심사위원회의 기술성, 사업성, 가격평가 관련 주요 지적 또는 칭찬 내용"
+              placeholder="심사위원회의 기술개발 타당성, 사업화 가능성, 비목 산정 관련 주요 지적 또는 칭찬 내용"
               className="w-full border rounded-lg px-3 py-2 bg-background"
             />
           </div>
@@ -304,7 +304,7 @@ export const OutcomeFormModal: React.FC<OutcomeFormModalProps> = ({
               rows={2}
               value={internalPostmortem}
               onChange={(e) => setInternalPostmortem(e.target.value)}
-              placeholder="이번 제안 작성 과정에서의 교훈, 부족했던 점, 다음 입찰 시 개선사항"
+              placeholder="이번 공모 신청서 작성 및 발표평가 과정에서의 교훈, 차기 공모 개선사항"
               className="w-full border rounded-lg px-3 py-2 bg-background"
             />
           </div>
@@ -316,7 +316,7 @@ export const OutcomeFormModal: React.FC<OutcomeFormModalProps> = ({
                 type="text"
                 value={successReasonsStr}
                 onChange={(e) => setSuccessReasonsStr(e.target.value)}
-                placeholder="기술성 우수, 단가 경쟁력 등"
+                placeholder="기술성 우수, 수요기업 확약, 정책 가점 등"
                 className="w-full border rounded-lg px-3 py-2 bg-background"
               />
             </div>
@@ -326,7 +326,7 @@ export const OutcomeFormModal: React.FC<OutcomeFormModalProps> = ({
                 type="text"
                 value={failureReasonsStr}
                 onChange={(e) => setFailureReasonsStr(e.target.value)}
-                placeholder="실적 부족, 가격 점수 열세 등"
+                placeholder="실적 부족, 비목 근거 미흡, 연구인력 참여율 등"
                 className="w-full border rounded-lg px-3 py-2 bg-background"
               />
             </div>

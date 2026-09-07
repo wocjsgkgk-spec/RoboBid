@@ -21,15 +21,13 @@ export class ProjectConceptStore {
   private concepts: Map<string, ProjectConcept> = new Map();
   private specs: Map<string, MasterSpecification> = new Map();
   private versions: Map<string, MasterSpecVersionRecord[]> = new Map();
+  private deletedIds: Set<string> = new Set();
 
   private constructor() {
     this.restoreFromStorage();
-    if (this.concepts.size === 0) {
-      this.seedInitialConcepts();
-    }
   }
 
-  private seedInitialConcepts(): void {
+  public seedInitialConcepts(): void {
     const now = new Date().toISOString();
 
     // 1. AMR 물류 로봇
@@ -218,12 +216,21 @@ export class ProjectConceptStore {
   private restoreFromStorage(): void {
     if (typeof window !== "undefined" && window.localStorage) {
       try {
+        const deletedRaw = localStorage.getItem("robobid_deleted_concept_ids");
+        if (deletedRaw) {
+          const arr = JSON.parse(deletedRaw);
+          if (Array.isArray(arr)) {
+            arr.forEach((id: string) => this.deletedIds.add(id));
+          }
+        }
         const cachedConcepts = localStorage.getItem("robobid_project_concepts");
         if (cachedConcepts) {
           const list: ProjectConcept[] = JSON.parse(cachedConcepts);
           if (Array.isArray(list)) {
             for (const item of list) {
-              this.concepts.set(item.id, item);
+              if (!this.deletedIds.has(item.id)) {
+                this.concepts.set(item.id, item);
+              }
             }
           }
         }
@@ -232,7 +239,9 @@ export class ProjectConceptStore {
           const list: MasterSpecification[] = JSON.parse(cachedSpecs);
           if (Array.isArray(list)) {
             for (const s of list) {
-              this.specs.set(s.projectConceptId, s);
+              if (!this.deletedIds.has(s.projectConceptId)) {
+                this.specs.set(s.projectConceptId, s);
+              }
             }
           }
         }
@@ -240,7 +249,9 @@ export class ProjectConceptStore {
         if (cachedVersions) {
           const mapData: Record<string, MasterSpecVersionRecord[]> = JSON.parse(cachedVersions);
           for (const [k, v] of Object.entries(mapData)) {
-            this.versions.set(k, v);
+            if (!this.deletedIds.has(k)) {
+              this.versions.set(k, v);
+            }
           }
         }
       } catch (e) {
@@ -265,6 +276,10 @@ export class ProjectConceptStore {
           versionsObj[k] = v;
         }
         localStorage.setItem("robobid_spec_versions", JSON.stringify(versionsObj));
+        localStorage.setItem(
+          "robobid_deleted_concept_ids",
+          JSON.stringify(Array.from(this.deletedIds))
+        );
       } catch (e) {
         console.error("Failed to persist project concepts to localStorage:", e);
       }
@@ -285,6 +300,9 @@ export class ProjectConceptStore {
   }
 
   public clearAll(): void {
+    for (const id of this.concepts.keys()) {
+      this.deletedIds.add(id);
+    }
     this.concepts.clear();
     this.specs.clear();
     this.versions.clear();
@@ -461,6 +479,7 @@ export class ProjectConceptStore {
   }
 
   public delete(id: string): boolean {
+    this.deletedIds.add(id);
     const deleted = this.concepts.delete(id);
     this.specs.delete(id);
     this.versions.delete(id);

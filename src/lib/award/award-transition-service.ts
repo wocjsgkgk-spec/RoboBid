@@ -36,9 +36,13 @@ export class AwardTransitionService {
     // 1. 공고 및 프로젝트 컨셉 연계 정보 조회
     const opp = opportunityStore.getById(input.opportunityId);
     const conceptStore = ProjectConceptStore.getInstance();
-    const concept = input.projectConceptId
+    let concept = input.projectConceptId
       ? conceptStore.getById(input.projectConceptId)
-      : conceptStore.getAll()[0]; // fallback to default concept
+      : conceptStore.getAll()[0];
+    if (!concept && input.projectConceptId === "c001-amr-logistics-robot") {
+      conceptStore.seedInitialConcepts();
+      concept = conceptStore.getById(input.projectConceptId);
+    }
     const spec = concept ? conceptStore.getMasterSpec(concept.id) : undefined;
 
     const projectName =
@@ -316,7 +320,7 @@ export class AwardTransitionService {
       organizationId: input.organizationId || opp?.organizationId || concept?.organizationId || crypto.randomUUID(),
       opportunityId: input.opportunityId,
       proposalId: input.proposalId || null,
-      projectConceptId: concept?.id || null,
+      projectConceptId: concept?.id || input.projectConceptId || null,
       name: projectName,
       status: "DEVELOPMENT_ACTIVE",
       agreement,

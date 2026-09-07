@@ -13,9 +13,6 @@ export class DerivationStore {
 
   private constructor() {
     this.restoreFromStorage();
-    if (this.documents.size === 0) {
-      this.seedInitialDerivations();
-    }
   }
 
   public static getInstance(): DerivationStore {
@@ -32,7 +29,7 @@ export class DerivationStore {
     return global.__derivationStore;
   }
 
-  private seedInitialDerivations(): void {
+  public seedInitialDerivations(): void {
     try {
       const conceptStore = ProjectConceptStore.getInstance();
       const amrConcept = conceptStore.getById("c001-amr-logistics-robot");

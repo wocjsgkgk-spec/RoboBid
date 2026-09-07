@@ -36,7 +36,7 @@ export const OutcomeListView: React.FC<OutcomeListViewProps> = ({
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
             <Award className="w-3 h-3" />
-            선정 (수주)
+            최종 선정 (협약)
           </span>
         );
       case 'REJECTED':
@@ -84,19 +84,19 @@ export const OutcomeListView: React.FC<OutcomeListViewProps> = ({
   return (
     <div className="border rounded-xl bg-card shadow-sm overflow-hidden">
       <div className="p-4 border-b bg-muted/20 flex items-center justify-between">
-        <h3 className="font-semibold text-base">지원 결과 및 심사 이력 데이터셋 ({outcomes.length}건)</h3>
+        <h3 className="font-semibold text-base">공모 심사 결과 및 위원회 평가 이력 ({outcomes.length}건)</h3>
       </div>
 
       <div className="overflow-x-auto">
         <table className="w-full text-sm text-left">
           <thead className="bg-muted/50 text-muted-foreground text-xs uppercase border-b">
             <tr>
-              <th className="py-3 px-4 font-semibold">공모명 / 발주기관</th>
+              <th className="py-3 px-4 font-semibold">공모 과제명 / 전담기관</th>
               <th className="py-3 px-4 font-semibold text-center">도메인</th>
               <th className="py-3 px-4 font-semibold text-center">Score / 결정</th>
               <th className="py-3 px-4 font-semibold text-center">상태</th>
               <th className="py-3 px-4 font-semibold text-center">평가점수</th>
-              <th className="py-3 px-4 font-semibold text-right">수주금액</th>
+              <th className="py-3 px-4 font-semibold text-right">확정 지원금</th>
               <th className="py-3 px-4 font-semibold text-center">경쟁률 / 소요일</th>
               <th className="py-3 px-4 font-semibold text-center">관리</th>
             </tr>

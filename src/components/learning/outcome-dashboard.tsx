@@ -58,20 +58,20 @@ export const OutcomeDashboard: React.FC<OutcomeDashboardProps> = ({
 
         <div className="p-4 border rounded-xl bg-card shadow-sm border-emerald-500/20 bg-emerald-500/5">
           <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400 text-xs font-medium">
-            <span>최종 선정 (수주)</span>
+            <span>최종 선정 (협약)</span>
             <Award className="w-4 h-4" />
           </div>
           <div className="mt-2 text-2xl font-bold text-emerald-600 dark:text-emerald-400">
             {summary.awardedCount}건
           </div>
           <div className="text-xs text-muted-foreground mt-1">
-            사후 승률 {summary.winRate}%
+            공모 선정률 {summary.winRate}%
           </div>
         </div>
 
         <div className="p-4 border rounded-xl bg-card shadow-sm">
           <div className="flex items-center justify-between text-rose-500 text-xs font-medium">
-            <span>탈락 / 철회</span>
+            <span>탈락 / 미선정</span>
             <XCircle className="w-4 h-4" />
           </div>
           <div className="mt-2 text-2xl font-bold text-rose-600 dark:text-rose-400">
@@ -84,14 +84,14 @@ export const OutcomeDashboard: React.FC<OutcomeDashboardProps> = ({
 
         <div className="p-4 border rounded-xl bg-card shadow-sm">
           <div className="flex items-center justify-between text-muted-foreground text-xs font-medium">
-            <span>누적 수주액</span>
+            <span>누적 협약 지원금</span>
             <DollarSign className="w-4 h-4 text-amber-500" />
           </div>
           <div className="mt-2 text-2xl font-bold">
             {formatCurrency(summary.totalAwardAmount)}
           </div>
           <div className="text-xs text-muted-foreground mt-1">
-            선정 과제 총 협약금
+            선정 과제 총 정부지원금
           </div>
         </div>
 

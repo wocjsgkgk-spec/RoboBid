@@ -73,11 +73,20 @@ export default function ProjectsPage() {
   const loadData = async () => {
     setIsLoading(true);
     try {
+      let deletedIds: string[] = [];
+      if (typeof window !== "undefined") {
+        try {
+          const raw = localStorage.getItem("robobid_deleted_concept_ids");
+          if (raw) deletedIds = JSON.parse(raw);
+        } catch {}
+      }
+
       const res = await fetch("/api/concepts");
       if (res.ok) {
         const data = await res.json();
         if (data.concepts && Array.isArray(data.concepts)) {
-          setConcepts(data.concepts);
+          const filtered = data.concepts.filter((c: ProjectConcept) => !deletedIds.includes(c.id));
+          setConcepts(filtered);
         }
       }
     } catch (e) {
@@ -351,14 +360,46 @@ export default function ProjectsPage() {
   const handleDelete = async (id: string, conceptName: string) => {
     if (!confirm(`'${conceptName}' 프로젝트를 영구 삭제하시겠습니까?`)) return;
     try {
+      if (typeof window !== "undefined") {
+        try {
+          const raw = localStorage.getItem("robobid_deleted_concept_ids");
+          const arr: string[] = raw ? JSON.parse(raw) : [];
+          if (!arr.includes(id)) arr.push(id);
+          localStorage.setItem("robobid_deleted_concept_ids", JSON.stringify(arr));
+        } catch {}
+      }
+      setConcepts((prev) => prev.filter((c) => c.id !== id));
       const res = await fetch(`/api/concepts/${id}`, { method: "DELETE" });
       const data = await res.json();
       if (data.success) {
-        toast.success(`'${conceptName}' 프로젝트가 삭제되었습니다.`);
-        await loadData();
+        toast.success(`'${conceptName}' 프로젝트가 영구 삭제되었습니다.`);
       }
     } catch (err: any) {
       toast.error(`삭제 실패: ${err.message}`);
+    }
+  };
+
+  const handleClearAll = async () => {
+    if (!confirm("등록된 모든 로봇 개발 아이템 및 Master Spec을 완전히 삭제하시겠습니까?")) return;
+    try {
+      setIsLoading(true);
+      if (typeof window !== "undefined") {
+        const allIds = concepts.map((c) => c.id);
+        const existingRaw = localStorage.getItem("robobid_deleted_concept_ids");
+        const existingArr: string[] = existingRaw ? JSON.parse(existingRaw) : [];
+        const merged = Array.from(new Set([...existingArr, ...allIds]));
+        localStorage.setItem("robobid_deleted_concept_ids", JSON.stringify(merged));
+        localStorage.removeItem("robobid_project_concepts");
+        localStorage.removeItem("robobid_master_specs");
+        localStorage.removeItem("robobid_spec_versions");
+      }
+      setConcepts([]);
+      await fetch("/api/concepts", { method: "DELETE" });
+      toast.success("모든 개발 아이템이 성공적으로 삭제되었습니다.");
+    } catch (err: any) {
+      toast.error(`삭제 실패: ${err.message}`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -400,10 +441,22 @@ export default function ProjectsPage() {
           </p>
         </div>
 
-        <Button onClick={() => setIsCreateModalOpen(true)} className="gap-2 shrink-0">
-          <Plus className="h-4 w-4" />
-          상세 프로젝트 등록
-        </Button>
+        <div className="flex items-center gap-2 shrink-0">
+          {concepts.length > 0 && (
+            <Button
+              variant="outline"
+              onClick={handleClearAll}
+              className="gap-1.5 text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-rose-200"
+            >
+              <Trash2 className="h-4 w-4" />
+              전체 삭제
+            </Button>
+          )}
+          <Button onClick={() => setIsCreateModalOpen(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            상세 프로젝트 등록
+          </Button>
+        </div>
       </div>
 
       {/* 2. Quick Single-line Idea Input Bar */}
