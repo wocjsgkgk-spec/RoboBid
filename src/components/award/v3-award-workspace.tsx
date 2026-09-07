@@ -40,7 +40,7 @@ export function V3AwardWorkspace() {
 
   // Expense form state
   const [expenseCategory, setExpenseCategory] = useState<ProjectBudgetCategory>("LABOR");
-  const [expenseAmount, setExpenseAmount] = useState<number>(10000000);
+  const [expenseAmount, setExpenseAmount] = useState<number | "">("");
   const [recordingExpense, setRecordingExpense] = useState(false);
 
   const loadProjects = useCallback(async () => {
@@ -67,7 +67,11 @@ export function V3AwardWorkspace() {
 
   const handleRecordExpense = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedProject || expenseAmount <= 0) return;
+    const numAmount = Number(expenseAmount);
+    if (!selectedProject || !numAmount || numAmount <= 0) {
+      alert("집행 금액을 올바르게 입력해주세요.");
+      return;
+    }
 
     try {
       setRecordingExpense(true);
@@ -76,7 +80,7 @@ export function V3AwardWorkspace() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           category: expenseCategory,
-          amount: expenseAmount,
+          amount: numAmount,
         }),
       });
       const json = await res.json();
@@ -85,7 +89,8 @@ export function V3AwardWorkspace() {
         setProjects((prev) =>
           prev.map((p) => (p.id === json.data.id ? json.data : p))
         );
-        alert(`집행 등록 완료: ${expenseCategory} 비목에 ${expenseAmount.toLocaleString()}원이 집행되었습니다.`);
+        setExpenseAmount("");
+        alert(`집행 등록 완료: ${expenseCategory} 비목에 ${numAmount.toLocaleString()}원이 집행되었습니다.`);
       } else {
         alert(json.error || "집행 등록 실패");
       }
@@ -131,6 +136,7 @@ export function V3AwardWorkspace() {
     if (!confirm("등록되거나 임의 생성된 모든 선정 과제를 완전히 삭제하시겠습니까?")) return;
     try {
       setLoading(true);
+      await fetch("/api/awards", { method: "DELETE" });
       for (const p of projects) {
         await fetch(`/api/awards/${p.id}`, { method: "DELETE" });
       }
@@ -375,7 +381,7 @@ export function V3AwardWorkspace() {
                     <input
                       type="number"
                       value={expenseAmount}
-                      onChange={(e) => setExpenseAmount(Number(e.target.value))}
+                      onChange={(e) => setExpenseAmount(e.target.value === "" ? "" : Number(e.target.value))}
                       step={1000000}
                       className="bg-white border border-slate-300 rounded-lg p-2 w-44 font-mono"
                       placeholder="집행 금액 (원)"

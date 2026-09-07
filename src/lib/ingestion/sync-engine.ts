@@ -1,6 +1,7 @@
 import { ProviderRegistry, NormalizedOpportunityPayload } from "../providers";
 import { Deduplicator, ExistingOpportunitySummary } from "./deduplicator";
 import { ProviderStatus } from "@/types";
+import { isTargetRobotFundingOpportunity } from "../funding/target-domain-filter";
 
 export interface SyncRunResult {
   providerId: string;
@@ -100,6 +101,9 @@ export class IngestionSyncEngine {
         try {
           // 3. Normalize
           const normalized = adapter.normalize(item);
+          if (!isTargetRobotFundingOpportunity(normalized)) {
+            continue; // Skip consulting, service contracts, etc.
+          }
           normalizedList.push(normalized);
 
           // 4. Deduplicate & Amendment Check

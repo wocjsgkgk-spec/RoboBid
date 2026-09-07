@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { opportunityStore } from "@/lib/opportunities/opportunity-store";
 import { notificationService } from "@/lib/notifications/notification-service";
+import { filterTargetOpportunities } from "@/lib/funding/target-domain-filter";
 
 export const dynamic = 'force-dynamic';
 
@@ -12,7 +13,8 @@ export async function GET(req: NextRequest) {
   const page = parseInt(searchParams.get("page") || "1", 10);
   const limit = parseInt(searchParams.get("limit") || "50", 10);
 
-  let list = opportunityStore.getAll();
+  // 로봇 지원사업/R&D 타깃 공모 필터링 (컨설팅, 용역, 단순 교육 등 원천 배제)
+  let list = filterTargetOpportunities(opportunityStore.getAll());
 
   if (search) {
     list = list.filter(

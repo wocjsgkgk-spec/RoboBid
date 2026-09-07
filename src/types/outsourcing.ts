@@ -11,8 +11,8 @@ export const OutsourcingTaskCategorySchema = z.enum([
   "CLOUD_SERVER_APP",        // 관제 서버/모바일 앱 외주
   "TESTING_CERTIFICATION",   // 공인 시험성적서 및 인증 대행
   "DESIGN_MODELING",         // 산업 디자인 및 3D 모델링
-  "CONSULTING_COMPLIANCE",   // 규격 컨설팅 및 특허 분석
-  "OTHER_SUBCONTRACT",       // 기타 외주 용역
+  "PATENT_REGULATORY",       // 특허 동향 분석 및 인증 규격 분석
+  "OTHER_SUBCONTRACT",       // 기타 외주 제작
 ]);
 export type OutsourcingTaskCategory = z.infer<typeof OutsourcingTaskCategorySchema>;
 
@@ -81,7 +81,7 @@ export const QuoteEvaluationSchema = z.object({
   managementScore: z.number().min(0).max(10).default(8), // 신뢰도 및 사후관리 10점
   totalScore: z.number().min(0).max(100).default(86),
   evaluationNotes: z.string().default(""),
-  evaluator: z.string().default("로봇연구소 김수석"),
+  evaluator: z.string().default(""),
   evaluatedAt: z.string(),
 });
 export type QuoteEvaluation = z.infer<typeof QuoteEvaluationSchema>;

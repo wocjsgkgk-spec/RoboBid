@@ -29,11 +29,15 @@ export function ActionCenter({ actionItems, onActionClick }: ActionCenterProps) 
     const text = `${item.title || ""} ${item.description || ""} ${item.opportunityTitle || ""}`.toLowerCase();
     if (
       text.includes("용역") ||
+      text.includes("컨설팅") ||
+      text.includes("자문") ||
+      text.includes("멘토링") ||
       text.includes("인력") ||
       text.includes("청소") ||
       text.includes("경비") ||
       text.includes("유지관리") ||
-      text.includes("적격심사")
+      text.includes("적격심사") ||
+      text.includes("마케팅")
     ) {
       return false;
     }

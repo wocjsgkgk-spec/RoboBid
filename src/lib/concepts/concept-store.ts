@@ -135,7 +135,7 @@ export class ProjectConceptStore {
       estimatedBudget: 450_000_000,
       requiredFunding: 350_000_000,
       marketAnalysis: "정밀 조립용 협동로봇 시장 연 34% 폭발적 성장세",
-      salesModel: "턴키 조립 셀 납품 + 공정 최적화 기술지원 컨설팅",
+      salesModel: "턴키 조립 셀 납품 + 사후 유지보수 및 원격 관제 라이선스",
       owner: "공정자동화팀 이책임",
       status: "CONCEPT",
       currentVersion: 1,

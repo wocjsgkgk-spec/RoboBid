@@ -36,6 +36,7 @@ import { BidDecisionModal } from "@/components/opportunities/bid-decision-modal"
 import { ActionCenter } from "@/components/today/action-center";
 import { TodayActionItem } from "@/types/today";
 import { Opportunity } from "@/types";
+import { isTargetRobotFundingOpportunity } from "@/lib/funding/target-domain-filter";
 
 export default function TodayPage() {
   const [summary, setSummary] = useState<TodayBidOpsSummary | null>(null);
@@ -96,21 +97,9 @@ export default function TodayPage() {
     setTasks([...taskStore.getAll()]);
   };
 
-  // RoboBid AI v3.0: 순수 정부지원금(R&D, 창업, 시제품, 실증) 및 완제품 구매만 대상 (용역/인력 배제)
+  // RoboBid AI v3.0: 순수 정부지원금(R&D, 창업, 시제품, 실증) 및 로봇 하드웨어만 대상 (용역/컨설팅 원천 배제)
   const isFundingOpportunity = (o: Opportunity) => {
-    if (o.bidType === "SERVICE" || o.fundingType === "SERVICE_CONTRACT") return false;
-    const t = (o.title || "").toLowerCase();
-    if (
-      t.includes("용역") ||
-      t.includes("인력") ||
-      t.includes("청소") ||
-      t.includes("경비") ||
-      t.includes("유지관리") ||
-      t.includes("위탁운영")
-    ) {
-      return false;
-    }
-    return true;
+    return isTargetRobotFundingOpportunity(o);
   };
 
   const fundingOpps = opportunities.filter(isFundingOpportunity);

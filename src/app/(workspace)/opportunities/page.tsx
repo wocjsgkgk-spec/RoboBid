@@ -32,6 +32,7 @@ import { BidDecisionModal } from "@/components/opportunities/bid-decision-modal"
 import { Opportunity360Workspace } from "@/components/opportunities/opportunity-360-workspace";
 import { opportunityStore } from "@/lib/opportunities/opportunity-store";
 import { FundingTaxonomyService } from "@/lib/funding/funding-taxonomy-service";
+import { isTargetRobotFundingOpportunity } from "@/lib/funding/target-domain-filter";
 import { Opportunity, BidType } from "@/types";
 
 export default function OpportunitiesPage() {
@@ -58,14 +59,12 @@ export default function OpportunitiesPage() {
   const [syncFallbackAllowed, setSyncFallbackAllowed] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
 
-  // Form State for Manual Input
+  // Form State for Manual Input (Empty initial state - no arbitrary prefilled values)
   const [formTitle, setFormTitle] = useState("");
   const [formAgency, setFormAgency] = useState("");
   const [formBidType, setFormBidType] = useState<BidType>("R_AND_D");
-  const [formBudget, setFormBudget] = useState<number>(500000000);
-  const [formDeadline, setFormDeadline] = useState(
-    new Date(Date.now() + 14 * 86400000).toISOString().split("T")[0]
-  );
+  const [formBudget, setFormBudget] = useState<number | "">("");
+  const [formDeadline, setFormDeadline] = useState("");
   const [formUrl, setFormUrl] = useState("");
 
   // Pricing Modal State
@@ -75,8 +74,8 @@ export default function OpportunitiesPage() {
     title: string;
   }>({
     open: false,
-    basePrice: 300000000,
-    title: "공공조달 건",
+    basePrice: 0,
+    title: "",
   });
 
   // Decision Modal State
@@ -182,8 +181,8 @@ export default function OpportunitiesPage() {
       title: formTitle,
       announcingAgency: formAgency || "자체 등록 기관",
       bidType: formBidType,
-      allocatedBudget: formBudget,
-      submissionDeadline: `${formDeadline}T18:00:00Z`,
+      allocatedBudget: typeof formBudget === "number" ? formBudget : 0,
+      submissionDeadline: formDeadline ? `${formDeadline}T18:00:00Z` : new Date(Date.now() + 14 * 86400000).toISOString(),
       canonicalUrl: formUrl || undefined,
       dataSource: "USER_INPUT",
       status: "INBOX",
@@ -203,6 +202,9 @@ export default function OpportunitiesPage() {
     setManualModalOpen(false);
     setFormTitle("");
     setFormAgency("");
+    setFormBudget("");
+    setFormDeadline("");
+    setFormUrl("");
     await loadData();
   };
 
@@ -241,6 +243,11 @@ export default function OpportunitiesPage() {
   };
 
   const filteredOpps = opportunities.filter((opp) => {
+    // 0. Strict Goal Alignment Filter: 컨설팅, 용역, 청소, 경비, 단순 마케팅 등 원천 배제
+    if (!isTargetRobotFundingOpportunity(opp)) {
+      return false;
+    }
+
     // 1. Category Filter (GOV_FUNDING vs PROCUREMENT)
     if (selectedCategory !== "ALL") {
       const cat = FundingTaxonomyService.getCategory(opp.fundingType || "");
@@ -762,7 +769,8 @@ export default function OpportunitiesPage() {
                     type="number"
                     step={10000000}
                     value={formBudget}
-                    onChange={(e) => setFormBudget(Number(e.target.value))}
+                    onChange={(e) => setFormBudget(e.target.value ? Number(e.target.value) : "")}
+                    placeholder="예: 500000000"
                     className="w-full px-3 py-2 bg-background border rounded-md text-foreground font-mono focus:outline-none"
                   />
                 </div>

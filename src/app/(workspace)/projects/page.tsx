@@ -51,9 +51,9 @@ export default function ProjectsPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [name, setName] = useState("");
   const [summary, setSummary] = useState("");
-  const [targetTrl, setTargetTrl] = useState(4);
-  const [estimatedBudget, setEstimatedBudget] = useState(500000000);
-  const [requiredTechnology, setRequiredTechnology] = useState("ROS2, SLAM, 자율주행, 모터제어");
+  const [targetTrl, setTargetTrl] = useState<number | "">("");
+  const [estimatedBudget, setEstimatedBudget] = useState<number | "">("");
+  const [requiredTechnology, setRequiredTechnology] = useState("");
 
   // Progressive Builder Modal State
   const [selectedConcept, setSelectedConcept] = useState<ProjectConcept | null>(null);
@@ -168,8 +168,8 @@ export default function ProjectsPage() {
         body: JSON.stringify({
           name: name.trim(),
           summary: summary.trim(),
-          targetTrl,
-          estimatedBudget,
+          targetTrl: targetTrl === "" ? undefined : Number(targetTrl),
+          estimatedBudget: estimatedBudget === "" ? undefined : Number(estimatedBudget),
           requiredTechnology: techArray,
         }),
       });
@@ -180,6 +180,9 @@ export default function ProjectsPage() {
         setIsCreateModalOpen(false);
         setName("");
         setSummary("");
+        setTargetTrl("");
+        setEstimatedBudget("");
+        setRequiredTechnology("");
         await loadData();
       } else {
         toast.error(`등록 실패: ${data.error}`);
@@ -1205,7 +1208,8 @@ export default function ProjectsPage() {
                     min={1}
                     max={9}
                     value={targetTrl}
-                    onChange={(e) => setTargetTrl(Number(e.target.value))}
+                    onChange={(e) => setTargetTrl(e.target.value === "" ? "" : Number(e.target.value))}
+                    placeholder="예: 4 (시제품 제작/검증)"
                     className="w-full border rounded-lg p-2 text-xs"
                   />
                 </div>
@@ -1215,7 +1219,8 @@ export default function ProjectsPage() {
                     type="number"
                     step={10000000}
                     value={estimatedBudget}
-                    onChange={(e) => setEstimatedBudget(Number(e.target.value))}
+                    onChange={(e) => setEstimatedBudget(e.target.value === "" ? "" : Number(e.target.value))}
+                    placeholder="예: 500000000"
                     className="w-full border rounded-lg p-2 text-xs"
                   />
                 </div>
@@ -1227,6 +1232,7 @@ export default function ProjectsPage() {
                   type="text"
                   value={requiredTechnology}
                   onChange={(e) => setRequiredTechnology(e.target.value)}
+                  placeholder="예: ROS2, SLAM, 자율주행, 모터제어"
                   className="w-full border rounded-lg p-2 text-xs"
                 />
               </div>

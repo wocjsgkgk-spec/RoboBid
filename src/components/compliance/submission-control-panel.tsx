@@ -40,15 +40,9 @@ export function SubmissionControlPanel({
   onConfirmSubmission,
 }: SubmissionControlPanelProps) {
   const [submitterName, setSubmitterName] = useState(checklist.submitterName || "");
-  const [submissionUrl, setSubmissionUrl] = useState(
-    checklist.submissionUrl || "https://www.g2b.go.kr"
-  );
-  const [finalFileName, setFinalFileName] = useState(
-    checklist.finalFileName || `${proposal.title.replace(/[\s/]/g, "_")}_최종제출본.pdf`
-  );
-  const [finalFileHash, setFinalFileHash] = useState(
-    checklist.finalFileHash || "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-  );
+  const [submissionUrl, setSubmissionUrl] = useState(checklist.submissionUrl || "");
+  const [finalFileName, setFinalFileName] = useState(checklist.finalFileName || "");
+  const [finalFileHash, setFinalFileHash] = useState(checklist.finalFileHash || "");
   const [notes, setNotes] = useState(checklist.submissionNotes || "");
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -310,7 +304,7 @@ export function SubmissionControlPanel({
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-foreground">제출 시스템 접수 URL</label>
               <Input
-                placeholder="https://www.g2b.go.kr"
+                placeholder="예: https://www.iris.go.kr (범부처통합연구지원시스템) 또는 공모 접수처 URL"
                 value={submissionUrl}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSubmissionUrl(e.target.value)}
                 disabled={isAlreadySubmitted}
@@ -320,6 +314,7 @@ export function SubmissionControlPanel({
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-foreground">최종 제출 파일명 (필수)</label>
               <Input
+                placeholder={`예: ${proposal.title ? proposal.title.replace(/[\s/]/g, "_") : "제안서"}_최종제출본.pdf`}
                 value={finalFileName}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFinalFileName(e.target.value)}
                 disabled={isAlreadySubmitted}
@@ -329,6 +324,7 @@ export function SubmissionControlPanel({
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-foreground">파일 무결성 해시 (SHA-256 필수)</label>
               <Input
+                placeholder="예: sha256 해시값 (직접 입력 또는 서명 생성)"
                 value={finalFileHash}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFinalFileHash(e.target.value)}
                 disabled={isAlreadySubmitted}
@@ -340,7 +336,7 @@ export function SubmissionControlPanel({
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-foreground">접수 확인 비고 (접수번호 등)</label>
             <Input
-              placeholder="예: 나라장터 접수번호 G2B-2026-999812 정상 접수 완료"
+              placeholder="예: 범부처통합연구지원시스템(IRIS) 또는 과제 접수번호 입력"
               value={notes}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNotes(e.target.value)}
               disabled={isAlreadySubmitted}

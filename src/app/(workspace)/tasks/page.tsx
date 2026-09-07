@@ -30,10 +30,8 @@ export default function TasksPage() {
   // New task form state
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
-  const [newAssignee, setNewAssignee] = useState("김수석 (사업개발팀)");
-  const [newDueDate, setNewDueDate] = useState(
-    new Date(Date.now() + 3 * 86400000).toISOString().split("T")[0]
-  );
+  const [newAssignee, setNewAssignee] = useState("");
+  const [newDueDate, setNewDueDate] = useState("");
   const [newPriority, setNewPriority] = useState<TaskPriority>("HIGH");
   const [newCategory, setNewCategory] = useState<any>("PROPOSAL_DRAFT");
   const [newOpportunityId, setNewOpportunityId] = useState("");
@@ -90,6 +88,8 @@ export default function TasksPage() {
     toast.success("새 업무가 성공적으로 등록되었습니다.");
     setNewTitle("");
     setNewDescription("");
+    setNewAssignee("");
+    setNewDueDate("");
     setCreateModalOpen(false);
     loadData();
   };
@@ -320,6 +320,7 @@ export default function TasksPage() {
                   <label className="block text-muted-foreground font-medium mb-1">담당자</label>
                   <input
                     type="text"
+                    placeholder="예: 성명 및 부서 (직접 입력)"
                     value={newAssignee}
                     onChange={(e) => setNewAssignee(e.target.value)}
                     className="w-full px-3 py-2 bg-background border rounded-md text-foreground focus:outline-none"

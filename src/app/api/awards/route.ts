@@ -49,3 +49,20 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+export async function DELETE() {
+  try {
+    const store = AwardStore.getInstance();
+    store.clear();
+    return NextResponse.json({
+      success: true,
+      message: "모든 선정 개발 프로젝트가 초기화되었습니다.",
+    });
+  } catch (error) {
+    console.error("DELETE /api/awards error:", error);
+    return NextResponse.json(
+      { success: false, error: (error as Error).message },
+      { status: 500 }
+    );
+  }
+}

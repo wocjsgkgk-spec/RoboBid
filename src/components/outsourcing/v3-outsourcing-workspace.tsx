@@ -35,7 +35,7 @@ export function V3OutsourcingWorkspace() {
   const [activeTab, setActiveTab] = useState<"gaps" | "scope" | "rfp" | "quotes">("scope");
 
   // Approval state
-  const [approverName, setApproverName] = useState("로봇연구소 김수석");
+  const [approverName, setApproverName] = useState("");
   const [approverAgreement, setApproverAgreement] = useState(false);
   const [approving, setApproving] = useState(false);
 
@@ -115,6 +115,8 @@ export function V3OutsourcingWorkspace() {
         setPackages((prev) =>
           prev.map((p) => (p.id === json.data.id ? json.data : p))
         );
+        setApproverName("");
+        setApproverAgreement(false);
         alert("외주 발주 패키지 승인이 완료되었습니다.");
       }
     } catch (err) {
@@ -411,9 +413,10 @@ export function V3OutsourcingWorkspace() {
                           <label className="font-semibold text-slate-700">승인자:</label>
                           <input
                             type="text"
+                            placeholder="성명 및 직책 (직접 입력)"
                             value={approverName}
                             onChange={(e) => setApproverName(e.target.value)}
-                            className="border border-slate-300 rounded px-2 py-1 text-xs"
+                            className="border border-slate-300 rounded px-2 py-1 text-xs w-44"
                           />
                           <label className="flex items-center gap-1.5 text-slate-600 cursor-pointer">
                             <input

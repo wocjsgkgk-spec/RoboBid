@@ -42,7 +42,7 @@ export default function EvidencePage() {
   // New item form state
   const [newName, setNewName] = useState("");
   const [newCategory, setNewCategory] = useState<EvidenceCategory>("CORPORATE");
-  const [newAssignee, setNewAssignee] = useState("경영지원팀");
+  const [newAssignee, setNewAssignee] = useState("");
 
   const loadData = () => {
     setItems(evidenceStore.getAll());
@@ -86,6 +86,7 @@ export default function EvidencePage() {
 
     toast.success("증빙자료가 성공적으로 라이브러리에 등록되었습니다.");
     setNewName("");
+    setNewAssignee("");
     setUploadModalOpen(false);
     loadData();
   };
@@ -281,6 +282,7 @@ export default function EvidencePage() {
                 <label className="block text-muted-foreground font-medium mb-1">담당 부서</label>
                 <input
                   type="text"
+                  placeholder="예: 경영지원팀, 특허법무팀 (직접 입력)"
                   value={newAssignee}
                   onChange={(e) => setNewAssignee(e.target.value)}
                   className="w-full px-3 py-2 bg-background border rounded-md text-foreground focus:outline-none"

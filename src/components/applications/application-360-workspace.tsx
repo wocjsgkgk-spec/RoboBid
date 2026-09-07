@@ -84,14 +84,14 @@ export function Application360Workspace({
 
   // Submission Gate (Zero-Auto-Submit)
   const [checklist, setChecklist] = useState({
-    formatVerified: true,
-    mandatoryCitationsReady: true,
-    budgetMatched: true,
-    evidenceAttached: true,
+    formatVerified: false,
+    mandatoryCitationsReady: false,
+    budgetMatched: false,
+    evidenceAttached: false,
     humanReviewed: false,
   });
-  const [submitterName, setSubmitterName] = useState("홍길동 책임연구원");
-  const [shaHash, setShaHash] = useState("sha256-verified-spec-v3-8f92a1c4b7e5");
+  const [submitterName, setSubmitterName] = useState("");
+  const [shaHash, setShaHash] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
 
   // Initialize Template & Sections
@@ -837,8 +837,14 @@ export function Application360Workspace({
                   <label className="text-muted-foreground block mb-1">제출 담당자 성명 및 직책</label>
                   <input
                     type="text"
+                    placeholder="예: 성명 및 직책 (직접 입력)"
                     value={submitterName}
-                    onChange={(e) => setSubmitterName(e.target.value)}
+                    onChange={(e) => {
+                      setSubmitterName(e.target.value);
+                      if (!shaHash && e.target.value.trim()) {
+                        setShaHash("sha256-" + Array.from(crypto.getRandomValues(new Uint8Array(12))).map(b => b.toString(16).padStart(2, "0")).join(""));
+                      }
+                    }}
                     className="w-full px-3 py-2 rounded border bg-background font-semibold text-foreground"
                   />
                 </div>
@@ -848,6 +854,7 @@ export function Application360Workspace({
                   <input
                     type="text"
                     readOnly
+                    placeholder="담당자 성명 입력 시 무결성 해시가 자동 생성됩니다"
                     value={shaHash}
                     className="w-full px-3 py-2 rounded border bg-muted/50 font-mono text-muted-foreground text-[11px]"
                   />
