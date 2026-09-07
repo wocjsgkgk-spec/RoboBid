@@ -12,9 +12,6 @@ export class AwardStore {
 
   private constructor() {
     this.restoreFromStorage();
-    if (this.projects.size === 0) {
-      this.seedInitialAwardedProjects();
-    }
   }
 
   public static getInstance(): AwardStore {

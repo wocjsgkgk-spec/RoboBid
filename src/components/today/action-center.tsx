@@ -24,14 +24,30 @@ interface ActionCenterProps {
 }
 
 export function ActionCenter({ actionItems, onActionClick }: ActionCenterProps) {
+  // RoboBid AI v3.0: 순수 정부 지원금 및 로봇 개발 과제만 노출 (단순 용역/인력파견/적격심사 배제)
+  const fundingOnlyItems = actionItems.filter((item) => {
+    const text = `${item.title || ""} ${item.description || ""} ${item.opportunityTitle || ""}`.toLowerCase();
+    if (
+      text.includes("용역") ||
+      text.includes("인력") ||
+      text.includes("청소") ||
+      text.includes("경비") ||
+      text.includes("유지관리") ||
+      text.includes("적격심사")
+    ) {
+      return false;
+    }
+    return true;
+  });
+
   // Sort priority: CRITICAL first, then HIGH, then NORMAL
-  const sortedItems = [...actionItems].sort((a, b) => {
+  const sortedItems = [...fundingOnlyItems].sort((a, b) => {
     const order = { CRITICAL: 0, HIGH: 1, NORMAL: 2 };
     return order[a.priority] - order[b.priority];
   });
 
-  const criticalCount = actionItems.filter((i) => i.priority === "CRITICAL").length;
-  const highCount = actionItems.filter((i) => i.priority === "HIGH").length;
+  const criticalCount = fundingOnlyItems.filter((i) => i.priority === "CRITICAL").length;
+  const highCount = fundingOnlyItems.filter((i) => i.priority === "HIGH").length;
 
   return (
     <Card className="border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-md">
@@ -56,7 +72,7 @@ export function ActionCenter({ actionItems, onActionClick }: ActionCenterProps) 
           <div className="flex items-center gap-2 text-xs">
             <span className="text-slate-500">대기 중 조치:</span>
             <span className="font-mono font-bold text-slate-900 dark:text-white">
-              {actionItems.length}건
+              {fundingOnlyItems.length}건
             </span>
           </div>
         </div>

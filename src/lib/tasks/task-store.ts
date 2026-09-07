@@ -26,7 +26,7 @@ export class TaskStore {
       {
         id: "task-01",
         title: "중소기업확인서 및 이노비즈 인증서 갱신본 발급 확인",
-        description: "조달청 적격심사 신인도 가점(+1.5점) 제출용 최신본 출력",
+        description: "정부 R&D 및 중기부 지원사업 신청용 가점(+1.5점) 제출용 최신본 확인",
         opportunityId: SAMPLE_OPPORTUNITIES[0]?.id || "opp-koneps-agv-001",
         opportunityTitle: "2026 공공 물류창고 자율이동로봇(AGV) 도입 실증사업",
         assignee: "김수석 (사업개발팀)",
@@ -53,8 +53,8 @@ export class TaskStore {
       },
       {
         id: "task-03",
-        title: "나라장터 사전규격 공개의견 검토 및 실격 리스크 크로스체크",
-        description: "특정 제조사 규격 의존 여부 및 필수 인증 규격 사전 검토",
+        title: "정부 지원사업 공고 사전규격 및 신청자격 적격성 크로스체크",
+        description: "지원사업 지원제외 대상 여부 및 신청자격 요건 사전 검토",
         opportunityId: SAMPLE_OPPORTUNITIES[0]?.id || "opp-koneps-agv-001",
         opportunityTitle: "2026 공공 물류창고 자율이동로봇(AGV) 도입 실증사업",
         assignee: "최법무 (규정준수팀)",
@@ -81,8 +81,8 @@ export class TaskStore {
       },
       {
         id: "task-05",
-        title: "신용평가등급확인서(조달청 제출용) 공공기관 전송 확인",
-        description: "나이스디앤비 기업신용평가 BBB+ 조달청 나라장터 연계 완료",
+        title: "신용평가등급확인서(지원사업 제출용) 공공기관 전송 확인",
+        description: "나이스디앤비 기업신용평가 BBB+ R&D 과제 신청용 확인 완료",
         opportunityId: SAMPLE_OPPORTUNITIES[0]?.id || "opp-koneps-agv-001",
         opportunityTitle: "2026 공공 물류창고 자율이동로봇(AGV) 도입 실증사업",
         assignee: "정재무 (재무관리팀)",

@@ -72,7 +72,7 @@ export default function TodayPage() {
       const res = await fetch("/api/ingestion/sync", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ providerId: "koneps", keyword: "로봇", fallbackToMock: true }),
+        body: JSON.stringify({ sources: ["bizinfo", "koneps"], keyword: "로봇", fallbackToMock: true }),
       });
       const data = await res.json();
       if (data.success && (data.items?.length || data.opportunities?.length || data.result?.items?.length)) {
@@ -96,12 +96,29 @@ export default function TodayPage() {
     setTasks([...taskStore.getAll()]);
   };
 
-  // 긴급 처리 및 미결정 공모
+  // RoboBid AI v3.0: 순수 정부지원금(R&D, 창업, 시제품, 실증) 및 완제품 구매만 대상 (용역/인력 배제)
+  const isFundingOpportunity = (o: Opportunity) => {
+    if (o.bidType === "SERVICE" || o.fundingType === "SERVICE_CONTRACT") return false;
+    const t = (o.title || "").toLowerCase();
+    if (
+      t.includes("용역") ||
+      t.includes("인력") ||
+      t.includes("청소") ||
+      t.includes("경비") ||
+      t.includes("유지관리") ||
+      t.includes("위탁운영")
+    ) {
+      return false;
+    }
+    return true;
+  };
+
+  const fundingOpps = opportunities.filter(isFundingOpportunity);
   const urgentTasks = tasks.filter((t) => t.status !== "DONE");
-  const pendingDecisions = opportunities.filter(
+  const pendingDecisions = fundingOpps.filter(
     (o) => o.status === "INBOX" || o.status === "NEW" || o.status === "REVIEWING" || o.status === "DISCOVERED"
   );
-  const imminentDeadlines = opportunities.filter((o) => {
+  const imminentDeadlines = fundingOpps.filter((o) => {
     const diffDays = Math.ceil((new Date(o.submissionDeadline).getTime() - Date.now()) / (1000 * 3600 * 24));
     return diffDays >= 0 && diffDays <= 7;
   });
@@ -114,14 +131,14 @@ export default function TodayPage() {
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
               <CalendarCheck className="h-6 w-6 text-primary" />
-              오늘의 수주 업무 (Today Operations)
+              오늘의 로봇 지원사업 우선조치 (Today Funding Operations)
             </h1>
             <Badge variant="outline" className="text-xs font-normal">
               실시간 동기화
             </Badge>
           </div>
           <p className="text-sm text-muted-foreground mt-1">
-            로그인 후 30초 내에 오늘 반드시 처리해야 할 과제, D-Day 마감, 미결정 안건을 확인합니다.
+            자체 로봇 개발을 위해 오늘 반드시 처리해야 할 정부 R&D, 시제품·실증 지원사업 마감 및 신청 안건을 확인합니다.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -133,7 +150,7 @@ export default function TodayPage() {
             className="gap-1.5 border border-primary/20 text-primary hover:bg-primary/10"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${isSyncing ? "animate-spin" : ""}`} />
-            <span>{isSyncing ? "수집 중..." : "나라장터 실시간 동기화"}</span>
+            <span>{isSyncing ? "수집 중..." : "정부 지원사업 실시간 동기화"}</span>
           </Button>
           <Button
             variant="outline"
@@ -385,9 +402,9 @@ export default function TodayPage() {
                           RFP
                         </Button>
                       </Link>
-                      <Link href="/tools">
-                        <Button variant="outline" size="sm" className="h-7 text-xs px-2 text-amber-600" title="A값 투찰금액 계산">
-                          투찰
+                      <Link href="/proposals">
+                        <Button variant="outline" size="sm" className="h-7 text-xs px-2 text-emerald-600" title="사업계획서 작성">
+                          신청서
                         </Button>
                       </Link>
                     </div>
@@ -509,9 +526,9 @@ export default function TodayPage() {
                         RFP 분석 <ArrowRight className="h-3 w-3" />
                       </span>
                     </Link>
-                    <Link href={`/tools`}>
+                    <Link href={`/portfolio`}>
                       <span className="text-muted-foreground hover:text-foreground flex items-center gap-1 text-[11px]">
-                        투찰 시뮬레이션
+                        자금 포트폴리오
                       </span>
                     </Link>
                   </div>
@@ -671,31 +688,31 @@ export default function TodayPage() {
         </Card>
       )}
 
-      {/* 8. Section: 실전 입찰 전략 툴킷 (Quick BidOps Hub) */}
+      {/* 8. Section: 로봇 자금 기획 및 사업비 시뮬레이터 (Funding & Operations Hub) */}
       <div className="p-4 rounded-xl border bg-card/60 backdrop-blur-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
             <Calculator className="h-4 w-4 text-primary" />
-            <span className="text-sm font-bold text-foreground">실전 입찰 도구 통합 허브</span>
+            <span className="text-sm font-bold text-foreground">로봇 개발 자금 기획 및 사업비 허브</span>
             <Badge variant="outline" className="text-[10px] font-mono border-primary/30 text-primary">
               1-클릭 접근
             </Badge>
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            A값 공제 투찰가 계산기, 적격심사 100점 진단기, R&D 사업비 자기부담금 시뮬레이터를 활용하세요.
+            정부 R&D 사업비 편성 및 민간부담금(현금/현물) 비율 계산기, 과제 제안요청서 심층 분석기를 활용하세요.
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <Link href="/tools">
             <Button size="sm" variant="default" className="text-xs gap-1.5 shadow-sm">
               <Calculator className="h-3.5 w-3.5" />
-              <span>입찰도구 열기</span>
+              <span>사업비 계산기</span>
             </Button>
           </Link>
           <Link href="/rfp">
             <Button size="sm" variant="outline" className="text-xs gap-1.5">
               <FileText className="h-3.5 w-3.5" />
-              <span>RFP 심층 분석</span>
+              <span>공고/RFP 심층 분석</span>
             </Button>
           </Link>
         </div>

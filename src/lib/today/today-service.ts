@@ -36,10 +36,28 @@ export class TodayService {
   public aggregateTodaySummary(input: TodayDataInput): TodayBidOpsSummary {
     const today = input.referenceDate || new Date();
     const actionItems: TodayActionItem[] = [];
+    // RoboBid AI v3.0: 순수 정부/지자체 지원사업(R&D, 창업지원금, 시제품제작, 실증) 및 로봇 완제품 구매만 대상 (용역/인력파견/단순유지관리 배제)
+    const isTargetFundingOpportunity = (opp: Opportunity) => {
+      if (opp.bidType === 'SERVICE' || opp.fundingType === 'SERVICE_CONTRACT') return false;
+      const lowerTitle = (opp.title || '').toLowerCase();
+      if (
+        lowerTitle.includes('용역') ||
+        lowerTitle.includes('인력') ||
+        lowerTitle.includes('청소') ||
+        lowerTitle.includes('경비') ||
+        lowerTitle.includes('유지관리') ||
+        lowerTitle.includes('위탁운영')
+      ) {
+        return false;
+      }
+      return true;
+    };
+
+    const targetOpportunities = input.opportunities.filter(isTargetFundingOpportunity);
 
     // 1. D-3 마감 임박 공모 필터링
     const urgentDeadlines: Array<{ opportunity: Opportunity; daysRemaining: number }> = [];
-    for (const opp of input.opportunities) {
+    for (const opp of targetOpportunities) {
       if (
         opp.submissionDeadline &&
         opp.status !== 'REJECTED' &&
@@ -70,7 +88,7 @@ export class TodayService {
 
     // 2. 신규 AI/Score 추천 공모 (적합도 점수 70점 이상)
     const recommendedOpportunities: Array<{ opportunity: Opportunity; score: OpportunityScore }> = [];
-    for (const opp of input.opportunities) {
+    for (const opp of targetOpportunities) {
       const score = input.scores.get(opp.id);
       if (score && score.totalScore >= 70 && opp.status !== 'REJECTED' && opp.status !== 'WITHDRAWN') {
         recommendedOpportunities.push({ opportunity: opp, score });
@@ -81,7 +99,7 @@ export class TodayService {
     const decidedOpportunityIds = new Set(input.decisions.map((d) => d.opportunityId));
     const pendingDecisions: Array<{ opportunity: Opportunity; score?: OpportunityScore }> = [];
 
-    for (const opp of input.opportunities) {
+    for (const opp of targetOpportunities) {
       if (
         !decidedOpportunityIds.has(opp.id) &&
         (opp.status === 'DISCOVERED' || opp.status === 'TRIAGED' || opp.status === 'REVIEW')
@@ -94,7 +112,7 @@ export class TodayService {
           id: `action-decision-${opp.id}`,
           type: 'DECISION_REQUIRED',
           priority: score && score.totalScore >= 70 ? 'HIGH' : 'NORMAL',
-          title: `[GO/NO-GO 심의 대기] ${opp.title}`,
+          title: `[지원사업 신청 심의 대기] ${opp.title}`,
           description: score
             ? `산출 적합도: ${score.totalScore}점 (추천: ${rec})`
             : '스코어 산출 후 사업 참여 여부 확정 필요',
@@ -106,7 +124,7 @@ export class TodayService {
 
     // 4. 서류 누락 또는 검토 필요 공모 (attachments 중 parsing_status가 REVIEW_REQUIRED 또는 FAILED)
     const missingDocuments: Array<{ opportunity: Opportunity; missingCount: number }> = [];
-    for (const opp of input.opportunities) {
+    for (const opp of targetOpportunities) {
       const problematicDocs = (opp.attachments || []).filter(
         (doc: any) => doc.parsingStatus === 'REVIEW_REQUIRED' || doc.parsingStatus === 'FAILED'
       );

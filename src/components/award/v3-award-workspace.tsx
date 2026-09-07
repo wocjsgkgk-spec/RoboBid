@@ -27,6 +27,7 @@ import {
   PieChart,
   ClipboardList,
   Sparkles,
+  Trash2,
 } from "lucide-react";
 
 export function V3AwardWorkspace() {
@@ -95,6 +96,57 @@ export function V3AwardWorkspace() {
     }
   };
 
+  const handleDeleteProject = async (projId: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!confirm("정말 이 선정 개발 과제를 삭제하시겠습니까? 관련 비목 및 WBS 내역이 함께 삭제됩니다.")) return;
+    try {
+      setLoading(true);
+      const res = await fetch(`/api/awards/${projId}`, { method: "DELETE" });
+      const json = await res.json();
+      if (json.success) {
+        const remaining = projects.filter((p) => p.id !== projId);
+        setProjects(remaining);
+        if (selectedProject?.id === projId) {
+          setSelectedProject(remaining.length > 0 ? remaining[0] : null);
+        }
+        if (typeof window !== "undefined") {
+          const cached = window.localStorage.getItem("robobid_v3_awarded_projects");
+          if (cached) {
+            const list = JSON.parse(cached).filter((p: any) => p.id !== projId);
+            window.localStorage.setItem("robobid_v3_awarded_projects", JSON.stringify(list));
+          }
+        }
+        alert("선정 개발 과제가 삭제되었습니다.");
+      } else {
+        alert(json.error || "과제 삭제 실패");
+      }
+    } catch (err) {
+      alert("삭제 오류: " + (err as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClearAllProjects = async () => {
+    if (!confirm("등록되거나 임의 생성된 모든 선정 과제를 완전히 삭제하시겠습니까?")) return;
+    try {
+      setLoading(true);
+      for (const p of projects) {
+        await fetch(`/api/awards/${p.id}`, { method: "DELETE" });
+      }
+      setProjects([]);
+      setSelectedProject(null);
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem("robobid_v3_awarded_projects");
+      }
+      alert("모든 선정 개발 과제 데이터가 초기화되었습니다.");
+    } catch (err) {
+      alert("초기화 오류: " + (err as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const totalAllocated = selectedProject?.fundingAllocation.totalBudget || 0;
   const totalExecuted =
     selectedProject?.fundingAllocation.categoryAllocations.reduce(
@@ -121,24 +173,48 @@ export function V3AwardWorkspace() {
             </p>
           </div>
 
-          {/* Project Switcher */}
+          {/* Project Switcher & Actions */}
           {projects.length > 0 && (
-            <div className="flex items-center gap-2 bg-white/10 p-1.5 rounded-xl">
-              <span className="text-xs text-emerald-100 shrink-0 font-medium">선정 과제:</span>
-              <select
-                value={selectedProject?.id || ""}
-                onChange={(e) => {
-                  const found = projects.find((p) => p.id === e.target.value);
-                  if (found) setSelectedProject(found);
-                }}
-                className="bg-white text-slate-800 text-xs rounded-lg px-2.5 py-1.5 font-medium border-0 focus:ring-2 focus:ring-amber-400"
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-2 bg-white/10 p-1.5 rounded-xl">
+                <span className="text-xs text-emerald-100 shrink-0 font-medium">선정 과제:</span>
+                <select
+                  value={selectedProject?.id || ""}
+                  onChange={(e) => {
+                    const found = projects.find((p) => p.id === e.target.value);
+                    if (found) setSelectedProject(found);
+                  }}
+                  className="bg-white text-slate-800 text-xs rounded-lg px-2.5 py-1.5 font-medium border-0 focus:ring-2 focus:ring-amber-400 max-w-[220px] truncate"
+                >
+                  {projects.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {selectedProject && (
+                <button
+                  onClick={() => handleDeleteProject(selectedProject.id)}
+                  disabled={loading}
+                  title="현재 선택된 과제 삭제"
+                  className="px-2.5 py-1.5 bg-rose-600/80 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1 transition"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  과제 삭제
+                </button>
+              )}
+
+              <button
+                onClick={handleClearAllProjects}
+                disabled={loading}
+                title="전체 선정 과제 데이터 초기화"
+                className="px-2.5 py-1.5 bg-black/30 hover:bg-rose-900/60 text-white border border-white/20 rounded-xl text-xs font-semibold flex items-center gap-1 transition"
               >
-                {projects.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
+                <Trash2 className="w-3.5 h-3.5 text-rose-300" />
+                전체 삭제
+              </button>
             </div>
           )}
         </div>
@@ -540,8 +616,14 @@ export function V3AwardWorkspace() {
           </div>
         </div>
       ) : (
-        <div className="bg-white p-12 text-center rounded-xl border border-slate-200 text-slate-400">
-          선정된 개발 프로젝트가 없습니다.
+        <div className="bg-white p-16 text-center rounded-2xl border border-slate-200 text-slate-500 shadow-xs">
+          <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-emerald-100">
+            <Trophy className="w-8 h-8 text-emerald-600" />
+          </div>
+          <h3 className="text-base font-bold text-slate-800">등록되거나 선정된 로봇 개발 프로젝트가 없습니다.</h3>
+          <p className="text-xs text-slate-500 mt-2 max-w-md mx-auto leading-relaxed">
+            승인되지 않은 임의 데이터는 생성되지 않습니다. 지원사업이 최종 선정된 후, [신청서/제안서] 허브에서 &lsquo;선정 과제로 전환&rsquo;을 진행하여 공식 협약 예산 및 WBS를 구성하세요.
+          </p>
         </div>
       )}
     </div>

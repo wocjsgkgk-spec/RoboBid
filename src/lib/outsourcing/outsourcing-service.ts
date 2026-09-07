@@ -23,9 +23,6 @@ export class OutsourcingStore {
 
   private constructor() {
     this.restoreFromStorage();
-    if (this.packages.size === 0) {
-      this.seedInitialPackages();
-    }
   }
 
   public static getInstance(): OutsourcingStore {
