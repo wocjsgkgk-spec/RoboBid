@@ -55,7 +55,18 @@ export default function PipelinePage() {
     setSelectedBidRoom(room);
   };
 
-  const loadData = () => {
+  const loadData = async () => {
+    try {
+      const res = await fetch("/api/opportunities?limit=100");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.opportunities && Array.isArray(data.opportunities)) {
+          opportunityStore.upsertFromApi(data.opportunities);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load opportunities from server in pipeline:", e);
+    }
     const pipeItems = pipelineStore.getAll();
     setItems(pipeItems);
     const oppsMap = new Map<string, Opportunity>();

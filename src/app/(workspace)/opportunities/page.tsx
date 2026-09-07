@@ -83,9 +83,24 @@ export default function OpportunitiesPage() {
     opportunity: null,
   });
 
-  const loadData = () => {
+  const loadData = async () => {
     setIsLoading(true);
     try {
+      const res = await fetch("/api/opportunities?limit=100");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.opportunities && Array.isArray(data.opportunities)) {
+          if (data.opportunities.length > 0) {
+            opportunityStore.upsertFromApi(data.opportunities);
+            setOpportunities(data.opportunities);
+            return;
+          }
+        }
+      }
+      const all = opportunityStore.getAll();
+      setOpportunities(all);
+    } catch (err) {
+      console.error("Failed to load opportunities from server:", err);
       const all = opportunityStore.getAll();
       setOpportunities(all);
     } finally {
@@ -115,11 +130,18 @@ export default function OpportunitiesPage() {
       });
       const data = await res.json();
       if (data.success && data.totalReceived > 0) {
+        if (data.opportunities && Array.isArray(data.opportunities) && data.opportunities.length > 0) {
+          opportunityStore.upsertFromApi(data.opportunities);
+          setOpportunities(data.opportunities);
+        } else if (data.items && Array.isArray(data.items) && data.items.length > 0) {
+          opportunityStore.upsertFromApi(data.items);
+          setOpportunities(opportunityStore.getAll());
+        }
         toast.success(
           `수집 완료: 총 ${data.totalReceived}건 공고가 실시간 동기화되었습니다 (채널: ${data.sources.join(", ")}).`
         );
         setSyncModalOpen(false);
-        loadData();
+        await loadData();
       } else if (data.success) {
         toast.info("검색 조건에 일치하는 신규 공고가 없거나 조회가 비어있습니다.");
       } else {
@@ -132,17 +154,26 @@ export default function OpportunitiesPage() {
     }
   };
 
-  const handleDuplicate = (id: string) => {
+  const handleDuplicate = async (id: string) => {
     const copy = opportunityStore.duplicate(id);
+    try {
+      await fetch("/api/opportunities", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ opportunity: copy }),
+      });
+    } catch (e) {
+      console.error(e);
+    }
     toast.success(`'${copy.title}' 복제본이 Inbox에 생성되었습니다.`);
-    loadData();
+    await loadData();
   };
 
-  const handleManualSubmit = (e: React.FormEvent) => {
+  const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formTitle.trim()) return;
 
-    opportunityStore.createManual({
+    const newOpp = opportunityStore.createManual({
       title: formTitle,
       announcingAgency: formAgency || "자체 등록 기관",
       bidType: formBidType,
@@ -153,14 +184,24 @@ export default function OpportunitiesPage() {
       status: "INBOX",
     });
 
+    try {
+      await fetch("/api/opportunities", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ opportunity: newOpp }),
+      });
+    } catch (e) {
+      console.error(e);
+    }
+
     toast.success("공모가 사용자 입력 데이터로 성공적으로 등록되었습니다.");
     setManualModalOpen(false);
     setFormTitle("");
     setFormAgency("");
-    loadData();
+    await loadData();
   };
 
-  const handleCsvImport = () => {
+  const handleCsvImport = async () => {
     const sampleRows = [
       {
         title: "2026 지자체 지능형 화재순찰로봇 실증 보급사업",
@@ -177,10 +218,21 @@ export default function OpportunitiesPage() {
         bidType: "SUBSIDY_SUPPORT" as BidType,
       },
     ];
-    opportunityStore.importBatchCsv(sampleRows);
+    const imported = opportunityStore.importBatchCsv(sampleRows);
+    for (const opp of imported) {
+      try {
+        await fetch("/api/opportunities", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ opportunity: opp }),
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    }
     toast.success("CSV 샘플 공모 2건이 일괄 등록되었습니다.");
     setCsvModalOpen(false);
-    loadData();
+    await loadData();
   };
 
   const filteredOpps = opportunities.filter((opp) => {

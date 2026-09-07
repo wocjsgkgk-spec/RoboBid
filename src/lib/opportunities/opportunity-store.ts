@@ -22,16 +22,71 @@ export interface CreateManualOpportunityInput {
   dataSource?: DataSource;
 }
 
+declare global {
+  // eslint-disable-next-line no-var
+  var __opportunityStore: OpportunityStore | undefined;
+}
+
 export class OpportunityStore {
   private static instance: OpportunityStore;
   private opportunities: Map<string, Opportunity> = new Map();
   private decisions: Map<string, BidDecision> = new Map();
 
   private constructor() {
-    // Initial state is completely clean (0 items). Populated upon user sync or manual entry.
+    this.restoreFromStorage();
+  }
+
+  private restoreFromStorage(): void {
+    if (typeof window !== "undefined" && window.localStorage) {
+      try {
+        const cached = localStorage.getItem("robobid_opportunities");
+        if (cached) {
+          const list: Opportunity[] = JSON.parse(cached);
+          if (Array.isArray(list)) {
+            for (const item of list) {
+              this.opportunities.set(item.id, item);
+            }
+          }
+        }
+        const cachedDecisions = localStorage.getItem("robobid_decisions");
+        if (cachedDecisions) {
+          const dList: BidDecision[] = JSON.parse(cachedDecisions);
+          if (Array.isArray(dList)) {
+            for (const d of dList) {
+              this.decisions.set(d.id, d);
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Failed to restore from localStorage:", e);
+      }
+    }
+  }
+
+  private persistToStorage(): void {
+    if (typeof window !== "undefined" && window.localStorage) {
+      try {
+        localStorage.setItem(
+          "robobid_opportunities",
+          JSON.stringify(Array.from(this.opportunities.values()))
+        );
+        localStorage.setItem(
+          "robobid_decisions",
+          JSON.stringify(Array.from(this.decisions.values()))
+        );
+      } catch (e) {
+        console.error("Failed to persist to localStorage:", e);
+      }
+    }
   }
 
   public static getInstance(): OpportunityStore {
+    if (typeof globalThis !== "undefined") {
+      if (!globalThis.__opportunityStore) {
+        globalThis.__opportunityStore = new OpportunityStore();
+      }
+      return globalThis.__opportunityStore;
+    }
     if (!OpportunityStore.instance) {
       OpportunityStore.instance = new OpportunityStore();
     }
@@ -41,6 +96,7 @@ export class OpportunityStore {
   public clearAll(): void {
     this.opportunities.clear();
     this.decisions.clear();
+    this.persistToStorage();
   }
 
   /**
@@ -54,6 +110,7 @@ export class OpportunityStore {
         dataSource: "DEMO",
       });
     }
+    this.persistToStorage();
   }
 
   public getAll(): Opportunity[] {
@@ -70,11 +127,14 @@ export class OpportunityStore {
       updatedAt: new Date().toISOString(),
     };
     this.opportunities.set(updated.id, updated);
+    this.persistToStorage();
     return updated;
   }
 
   public delete(id: string): boolean {
-    return this.opportunities.delete(id);
+    const res = this.opportunities.delete(id);
+    this.persistToStorage();
+    return res;
   }
 
   /**
@@ -105,6 +165,7 @@ export class OpportunityStore {
       updatedAt: new Date().toISOString(),
     };
     this.opportunities.set(id, newOpp);
+    this.persistToStorage();
     return newOpp;
   }
 
@@ -126,6 +187,7 @@ export class OpportunityStore {
       updatedAt: new Date().toISOString(),
     };
     this.opportunities.set(newId, copy);
+    this.persistToStorage();
     return copy;
   }
 
@@ -224,6 +286,7 @@ export class OpportunityStore {
         upserted.push(newOpp);
       }
     }
+    this.persistToStorage();
     return upserted;
   }
 
@@ -236,6 +299,7 @@ export class OpportunityStore {
     opp.status = status;
     opp.updatedAt = new Date().toISOString();
     this.opportunities.set(id, opp);
+    this.persistToStorage();
     return opp;
   }
 
@@ -262,6 +326,7 @@ export class OpportunityStore {
       this.opportunities.set(opp.id, opp);
     }
 
+    this.persistToStorage();
     return { decision, opportunity: opp };
   }
 

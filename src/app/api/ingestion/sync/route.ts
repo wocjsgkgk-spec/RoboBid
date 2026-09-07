@@ -79,6 +79,9 @@ export async function POST(req: NextRequest) {
       keyword,
       totalReceived: results.reduce((acc, r) => acc + r.recordsReceived, 0),
       totalUpserted: totalUpsertedCount,
+      items: allNormalizedItems,
+      opportunities: opportunityStore.getAll(),
+      result: results[0] || null,
       results,
     });
   } catch (err: any) {

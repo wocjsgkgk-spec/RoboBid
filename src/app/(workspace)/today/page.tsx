@@ -71,8 +71,8 @@ export default function TodayPage() {
         body: JSON.stringify({ providerId: "koneps", keyword: "로봇", fallbackToMock: true }),
       });
       const data = await res.json();
-      if (data.success && data.result?.items?.length) {
-        opportunityStore.upsertFromApi(data.result.items);
+      if (data.success && (data.items?.length || data.opportunities?.length || data.result?.items?.length)) {
+        opportunityStore.upsertFromApi(data.items || data.opportunities || data.result?.items || []);
         await loadData();
       }
     } catch (err) {
