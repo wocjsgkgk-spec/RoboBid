@@ -26,6 +26,7 @@ import {
   Command,
   Database,
   Filter,
+  Briefcase,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -37,32 +38,38 @@ interface NavItem {
   highlight?: boolean;
 }
 
-// 1. 운영 (Operations)
-const OPERATIONS_ITEMS: NavItem[] = [
-  { href: "/today", label: "오늘 & Action Center", icon: CalendarCheck },
-  { href: "/opportunities", label: "공모 탐색 & 360°", icon: Search },
-  { href: "/pipeline", label: "수주 파이프라인 (Bid Room)", icon: GitPullRequest },
-  { href: "/tasks", label: "과업 & 업무 협업", icon: CheckSquare },
+// 1. 메인 (Primary)
+const PRIMARY_ITEMS: NavItem[] = [
+  { href: "/today", label: "오늘", icon: CalendarCheck },
+  { href: "/projects", label: "개발아이템", icon: Cpu, badge: "v3" },
+  { href: "/opportunities", label: "지원기회", icon: Search },
+  { href: "/pipeline", label: "Funding Portfolio", icon: TrendingUp },
 ];
 
-// 2. 분석·제안 (Analysis & Proposals)
-const PROPOSAL_ITEMS: NavItem[] = [
-  { href: "/rfp", label: "RFP & Compliance", icon: FileText },
-  { href: "/proposals", label: "제안서 & Quality Gate", icon: FileSpreadsheet },
-  { href: "/submissions", label: "제출·마감 점검", icon: Send },
+// 2. 자금 지원 운영 (Funding Operations)
+const FUNDING_OPS_ITEMS: NavItem[] = [
+  { href: "/rfp", label: "지원준비 (RFP)", icon: FileText },
+  { href: "/proposals", label: "사업계획서", icon: FileSpreadsheet },
+  { href: "/submissions", label: "제출·심사", icon: Send },
 ];
 
-// 3. 지식·자산 (Knowledge & Assets)
+// 3. 사후 실행 (Post-Award)
+const POST_AWARD_ITEMS: NavItem[] = [
+  { href: "/awards", label: "선정·개발 (Award)", icon: Award, badge: "v3" },
+  { href: "/outsourcing", label: "외주·전문가 (SOW)", icon: Briefcase, badge: "v3" },
+  { href: "/tasks", label: "실무 태스크 (WBS)", icon: CheckSquare },
+];
+
+// 4. 지식 & 인텔리전스 (Knowledge & Intelligence)
 const KNOWLEDGE_ITEMS: NavItem[] = [
-  { href: "/vault", label: "회사역량 볼트", icon: Award },
-  { href: "/evidence", label: "자료·증빙 라이브러리", icon: FileCheck2 },
-  { href: "/intelligence", label: "수주 인텔리전스", icon: TrendingUp },
-  { href: "/learning", label: "성과·학습 (Win/Loss)", icon: ShieldCheck },
+  { href: "/vault", label: "자료·역량 볼트", icon: ShieldCheck },
+  { href: "/evidence", label: "증빙 라이브러리", icon: FileCheck2 },
+  { href: "/intelligence", label: "Intelligence & 회고", icon: GitPullRequest },
+  { href: "/tools", label: "조달/판매 지원도구", icon: Calculator, badge: "A값·산식" },
 ];
 
-// 4. 지원 & 설정 (Support & Settings)
+// 5. 지원 & 설정 (Support & System)
 const SUPPORT_ITEMS: NavItem[] = [
-  { href: "/tools", label: "계산도구 & 산식·규정", icon: Calculator, badge: "산식백서" },
   { href: "/ai", label: "RoboBid AI 코파일럿", icon: Bot, highlight: true },
   { href: "/notifications", label: "알림 센터", icon: Bell },
   { href: "/settings", label: "설정 & Admin", icon: Settings },
@@ -171,17 +178,20 @@ export function Sidebar() {
         </div>
       </div>
 
-      {/* Nav List with 4 Distinct Logical Groups */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-4 scrollbar-thin">
-        {renderNavGroup("운영 (Operations)", OPERATIONS_ITEMS, "operations")}
+      {/* Nav List with 5 Distinct v3.0 Logical Groups */}
+      <div className="flex-1 overflow-y-auto p-3 space-y-3.5 scrollbar-thin">
+        {renderNavGroup("메인 (Primary)", PRIMARY_ITEMS, "primary")}
         <div className="pt-2 border-t border-slate-800/80">
-          {renderNavGroup("분석·제안 (Proposals)", PROPOSAL_ITEMS, "proposals")}
+          {renderNavGroup("자금 지원 운영 (Funding)", FUNDING_OPS_ITEMS, "funding_ops")}
         </div>
         <div className="pt-2 border-t border-slate-800/80">
-          {renderNavGroup("지식·자산 (Knowledge)", KNOWLEDGE_ITEMS, "knowledge")}
+          {renderNavGroup("사후 실행 (Post-Award)", POST_AWARD_ITEMS, "post_award")}
         </div>
         <div className="pt-2 border-t border-slate-800/80">
-          {renderNavGroup("지원 & 설정 (Support)", SUPPORT_ITEMS, "support")}
+          {renderNavGroup("지식 & 인텔리전스", KNOWLEDGE_ITEMS, "knowledge")}
+        </div>
+        <div className="pt-2 border-t border-slate-800/80">
+          {renderNavGroup("지원 & 설정 (System)", SUPPORT_ITEMS, "support")}
         </div>
       </div>
 

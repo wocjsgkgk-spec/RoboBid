@@ -27,12 +27,15 @@ export class DecisionService {
     switch (input.decision) {
       case "GO":
       case "GO_WITH_CONDITIONS":
+      case "APPLY":
+      case "APPLY_WITH_CONDITIONS":
         newOpportunityStatus = "GO";
         break;
       case "HOLD":
         newOpportunityStatus = "HOLD";
         break;
       case "NO_GO":
+      case "PASS":
         newOpportunityStatus = "NO_GO";
         break;
     }

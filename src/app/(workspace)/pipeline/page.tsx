@@ -15,6 +15,7 @@ import {
   CheckSquare,
   Sparkles,
   BarChart3,
+  TrendingUp,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ import { Opportunity } from "@/types";
 import { BidDecisionModal } from "@/components/opportunities/bid-decision-modal";
 import { BidRoomView } from "@/components/pipeline/bid-room-view";
 import { PortfolioExecutiveDashboard } from "@/components/portfolio/portfolio-executive-dashboard";
+import { V3FundingPortfolioWorkspace } from "@/components/portfolio/v3-funding-portfolio-workspace";
 import { useRouter } from "next/navigation";
 
 const STAGES: PipelineStage[] = [
@@ -43,7 +45,7 @@ export default function PipelinePage() {
   const [opportunities, setOpportunities] = useState<Map<string, Opportunity>>(new Map());
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [priorityFilter, setPriorityFilter] = useState<string>("ALL");
-  const [pipelineViewMode, setPipelineViewMode] = useState<"FUNNEL" | "PORTFOLIO">("FUNNEL");
+  const [pipelineViewMode, setPipelineViewMode] = useState<"V3_FUNDING_PORTFOLIO" | "FUNNEL" | "PORTFOLIO">("V3_FUNDING_PORTFOLIO");
   const [decisionModalOpen, setDecisionModalOpen] = useState(false);
   const [selectedOppForDecision, setSelectedOppForDecision] = useState<Opportunity | null>(null);
   const [selectedBidRoom, setSelectedBidRoom] = useState<BidRoom | null>(null);
@@ -133,12 +135,12 @@ export default function PipelinePage() {
           <div className="flex items-center bg-muted/60 p-1 rounded-lg border">
             <Button
               size="sm"
-              variant={pipelineViewMode === "FUNNEL" ? "default" : "ghost"}
+              variant={pipelineViewMode === "V3_FUNDING_PORTFOLIO" ? "default" : "ghost"}
               className="h-8 text-xs font-medium"
-              onClick={() => setPipelineViewMode("FUNNEL")}
+              onClick={() => setPipelineViewMode("V3_FUNDING_PORTFOLIO")}
             >
-              <GitPullRequest className="h-3.5 w-3.5 mr-1.5" />
-              5단계 퍼널
+              <TrendingUp className="h-3.5 w-3.5 mr-1.5" />
+              v3 Funding Portfolio & Conflict
             </Button>
             <Button
               size="sm"
@@ -147,7 +149,16 @@ export default function PipelinePage() {
               onClick={() => setPipelineViewMode("PORTFOLIO")}
             >
               <BarChart3 className="h-3.5 w-3.5 mr-1.5" />
-              경영진 포트폴리오 (P1)
+              경영진 수주 대시보드
+            </Button>
+            <Button
+              size="sm"
+              variant={pipelineViewMode === "FUNNEL" ? "default" : "ghost"}
+              className="h-8 text-xs font-medium"
+              onClick={() => setPipelineViewMode("FUNNEL")}
+            >
+              <GitPullRequest className="h-3.5 w-3.5 mr-1.5" />
+              5단계 조달 퍼널
             </Button>
           </div>
 
@@ -167,7 +178,9 @@ export default function PipelinePage() {
         </div>
       </div>
 
-      {pipelineViewMode === "PORTFOLIO" ? (
+      {pipelineViewMode === "V3_FUNDING_PORTFOLIO" ? (
+        <V3FundingPortfolioWorkspace />
+      ) : pipelineViewMode === "PORTFOLIO" ? (
         <PortfolioExecutiveDashboard />
       ) : (
         <>

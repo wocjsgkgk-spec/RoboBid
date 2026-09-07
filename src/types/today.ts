@@ -41,6 +41,8 @@ export interface TodayBidOpsSummary {
   urgentDeadlineCount: number;
   missingDocCount: number;
   providerAlertCount: number;
+  earlySignalCount?: number;
+  portfolioGapAmount?: number;
 
   // 2. 항목별 실데이터 리스트 (Zero Fake Data)
   actionItems: TodayActionItem[];
@@ -64,5 +66,20 @@ export interface TodayBidOpsSummary {
   recentDecisions: Array<{
     decision: DecisionRecord;
     opportunityTitle: string;
+  }>;
+  earlySignals?: import('./early-signal').EarlySignal[];
+  portfolioGap?: import('./portfolio-advisor').PortfolioGapAnalysis;
+  awardedMilestones?: Array<{
+    projectId: string;
+    projectName: string;
+    milestoneTitle: string;
+    dueDate: string;
+    daysRemaining: number;
+  }>;
+  vaultAlerts?: Array<{
+    capabilityId: string;
+    title: string;
+    alertType: 'EXPIRED' | 'EXPIRING_SOON';
+    daysUntilExpiry: number;
   }>;
 }

@@ -5,6 +5,10 @@ import { Opportunity } from '@/types';
 import { OpportunityScore } from '@/types/scoring';
 import { DecisionRecord } from '@/types/decision';
 import { opportunityStore } from '@/lib/opportunities/opportunity-store';
+import { EarlySignalStore } from '@/lib/intelligence/early-signal-store';
+import { PortfolioAdvisorService } from '@/lib/portfolio/portfolio-advisor';
+import { AwardStore } from '@/lib/award/award-store';
+import { vaultStore } from '@/lib/vault/vault-store';
 
 export const dynamic = 'force-dynamic';
 
@@ -58,12 +62,54 @@ export async function GET() {
       });
     }
 
-    // 3. Today 7대 우선순위 집계
+    // 3. v3 Multi-source Intelligence 데이터 조회
+    const earlySignals = EarlySignalStore.getInstance().getActiveSignals();
+    const portfolioGap = PortfolioAdvisorService.analyzePortfolioGap(1_500_000_000);
+
+    // 4. Awarded 프로젝트 마일스톤 집계
+    const awardedProjects = AwardStore.getInstance().getAll();
+    const now = new Date();
+    const awardedMilestones = awardedProjects.flatMap((p) =>
+      (p.milestones || []).map((m) => {
+        const diffMs = new Date(m.targetDate).getTime() - now.getTime();
+        const daysRemaining = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+        return {
+          projectId: p.id,
+          projectName: p.name,
+          milestoneTitle: m.name,
+          dueDate: m.targetDate,
+          daysRemaining,
+        };
+      })
+    );
+
+    // 5. Vault 역량/증빙 유효기간 경보 집계
+    const capabilities = vaultStore.getAll();
+    const vaultAlerts = capabilities
+      .filter((c) => c.validUntil)
+      .map((c) => {
+        const diffMs = new Date(c.validUntil!).getTime() - now.getTime();
+        const daysUntilExpiry = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+        const alertType: "EXPIRED" | "EXPIRING_SOON" = daysUntilExpiry <= 0 ? "EXPIRED" : "EXPIRING_SOON";
+        return {
+          capabilityId: c.id,
+          title: c.title,
+          alertType,
+          daysUntilExpiry,
+        };
+      })
+      .filter((a) => a.daysUntilExpiry <= 60);
+
+    // 6. Today 9대 우선순위 실데이터 집계
     const summary = todayService.aggregateTodaySummary({
       opportunities,
       scores,
       decisions,
       providerHealths,
+      earlySignals,
+      portfolioGap,
+      awardedMilestones,
+      vaultAlerts,
     });
 
     return NextResponse.json({

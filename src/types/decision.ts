@@ -5,6 +5,9 @@ export const DecisionTypeSchema = z.enum([
   "GO_WITH_CONDITIONS",
   "HOLD",
   "NO_GO",
+  "APPLY",
+  "APPLY_WITH_CONDITIONS",
+  "PASS",
 ]);
 export type DecisionType = z.infer<typeof DecisionTypeSchema>;
 

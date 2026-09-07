@@ -7,6 +7,7 @@ import { Opportunity, BidType, OpportunityStatus, DataSource, DEFAULT_ORGANIZATI
 import { SAMPLE_OPPORTUNITIES } from "../today/sample-scenarios";
 import { DecisionService } from "../decision/decision-service";
 import { BidDecision, DecisionType } from "@/types/decision";
+import { FundingTaxonomyService } from "../funding/funding-taxonomy-service";
 
 export interface CreateManualOpportunityInput {
   title: string;
@@ -20,6 +21,9 @@ export interface CreateManualOpportunityInput {
   canonicalUrl?: string;
   status?: OpportunityStatus;
   dataSource?: DataSource;
+  fundingType?: string;
+  applicantStages?: string[];
+  originSource?: string;
 }
 
 declare global {
@@ -114,11 +118,14 @@ export class OpportunityStore {
   }
 
   public getAll(): Opportunity[] {
-    return Array.from(this.opportunities.values());
+    return Array.from(this.opportunities.values()).map((o) =>
+      FundingTaxonomyService.enrichOpportunity(o)
+    );
   }
 
   public getById(id: string): Opportunity | undefined {
-    return this.opportunities.get(id);
+    const found = this.opportunities.get(id);
+    return found ? FundingTaxonomyService.enrichOpportunity(found) : undefined;
   }
 
   public save(opp: Opportunity): Opportunity {
@@ -142,7 +149,7 @@ export class OpportunityStore {
    */
   public createManual(input: CreateManualOpportunityInput): Opportunity {
     const id = `opp-manual-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
-    const newOpp: Opportunity = {
+    const baseOpp: Opportunity = {
       id,
       organizationId: DEFAULT_ORGANIZATION_ID,
       providerId: "provider-manual",
@@ -159,11 +166,15 @@ export class OpportunityStore {
       canonicalUrl: input.canonicalUrl || null,
       status: input.status || "INBOX",
       dataSource: input.dataSource || "USER_INPUT",
+      fundingType: input.fundingType,
+      applicantStages: input.applicantStages,
+      originSource: input.originSource || "MANUAL",
       contentHash: `hash-${id}`,
       currentVersion: 1,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
+    const newOpp = FundingTaxonomyService.enrichOpportunity(baseOpp);
     this.opportunities.set(id, newOpp);
     this.persistToStorage();
     return newOpp;

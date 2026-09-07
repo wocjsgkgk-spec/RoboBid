@@ -28,6 +28,7 @@ interface BidDecisionModalProps {
     allocatedBudget?: number | null;
     status: string;
     primaryDomain: string;
+    fundingType?: string;
   };
   onDecisionRecorded?: () => void;
 }
@@ -45,9 +46,24 @@ export function BidDecisionModal({
     onClose?.();
     onOpenChange?.(false);
   };
-  const [decision, setDecision] = useState<DecisionType>("GO");
-  const [reason, setReason] = useState("사내 TRL 7 실증 기술 및 특허 일치도가 높으며 사업 예산 적정함.");
-  const [conditionsText, setConditionsText] = useState("D-10 이전 기술초안 완료\n컨소시엄 지분율 확정");
+
+  const isFunding = Boolean(
+    opportunity.fundingType &&
+    opportunity.fundingType !== "PROCUREMENT" &&
+    opportunity.fundingType !== "SERVICE_CONTRACT"
+  );
+
+  const [decision, setDecision] = useState<DecisionType>(isFunding ? "APPLY" : "GO");
+  const [reason, setReason] = useState(
+    isFunding
+      ? "사내 TRL 및 로봇 핵심기술 규격이 공고 목적과 부합하며, 비목별 지원금 충당률이 양호하여 지원 신청을 추진함."
+      : "사내 TRL 7 실증 기술 및 특허 일치도가 높으며 사업 예산 적정함."
+  );
+  const [conditionsText, setConditionsText] = useState(
+    isFunding
+      ? "컨소시엄 참여기업 확약서 확보\n시제품 제작 외주처 견적 확정"
+      : "D-10 이전 기술초안 완료\n컨소시엄 지분율 확정"
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!visible) return null;
@@ -61,13 +77,13 @@ export function BidDecisionModal({
 
     setIsSubmitting(true);
     try {
-      const conditions =
-        decision === "GO_WITH_CONDITIONS"
-          ? conditionsText
-              .split("\n")
-              .map((s) => s.trim())
-              .filter(Boolean)
-          : [];
+      const isConditional = decision === "GO_WITH_CONDITIONS" || decision === "APPLY_WITH_CONDITIONS";
+      const conditions = isConditional
+        ? conditionsText
+            .split("\n")
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : [];
 
       const res = await fetch("/api/opportunities", {
         method: "POST",
@@ -84,7 +100,9 @@ export function BidDecisionModal({
 
       if (res.ok) {
         toast.success(`[${decision}] 의사결정이 확정되었습니다.`, {
-          description: "Today 대시보드 및 공모 상태에 실시간 반영되었습니다.",
+          description: isFunding
+            ? "지원사업 Workspace 및 Today 대시보드에 실시간 반영되었습니다."
+            : "Today 대시보드 및 공모 상태에 실시간 반영되었습니다.",
         });
         if (onDecisionRecorded) onDecisionRecorded();
         handleClose();
@@ -99,36 +117,67 @@ export function BidDecisionModal({
     }
   };
 
-  const decisionOptions: Array<{ type: DecisionType; label: string; desc: string; icon: any; color: string }> = [
-    {
-      type: "GO",
-      label: "GO (참여 확정)",
-      desc: "제안서 작성 및 인력 배정을 즉시 착수합니다.",
-      icon: CheckCircle2,
-      color: "border-emerald-500 bg-emerald-50/20 text-emerald-600",
-    },
-    {
-      type: "GO_WITH_CONDITIONS",
-      label: "조건부 GO",
-      desc: "선결 조건(컨소시엄, 인증 갱신 등) 충족 시 참여합니다.",
-      icon: AlertTriangle,
-      color: "border-amber-500 bg-amber-50/20 text-amber-600",
-    },
-    {
-      type: "HOLD",
-      label: "HOLD (보류)",
-      desc: "질의응답 확인 또는 경쟁 구도 추가 분석 후 재심의합니다.",
-      icon: PauseCircle,
-      color: "border-blue-500 bg-blue-50/20 text-blue-600",
-    },
-    {
-      type: "NO_GO",
-      label: "NO-GO (불참)",
-      desc: "수익성 미달, 실적 요건 불충족 등으로 입찰을 포기합니다.",
-      icon: XCircle,
-      color: "border-destructive bg-destructive/10 text-destructive",
-    },
-  ];
+  const decisionOptions: Array<{ type: DecisionType; label: string; desc: string; icon: any; color: string }> = isFunding
+    ? [
+        {
+          type: "APPLY",
+          label: "APPLY (지원 결정)",
+          desc: "사업계획서 작성 및 지원서류 제출을 본격 착수합니다.",
+          icon: CheckCircle2,
+          color: "border-emerald-500 bg-emerald-50/20 text-emerald-600",
+        },
+        {
+          type: "APPLY_WITH_CONDITIONS",
+          label: "조건부 지원",
+          desc: "컨소시엄 구성, 자부담 매칭 등 선결조건 충족 시 지원합니다.",
+          icon: AlertTriangle,
+          color: "border-amber-500 bg-amber-50/20 text-amber-600",
+        },
+        {
+          type: "HOLD",
+          label: "HOLD (보류)",
+          desc: "공고 지침 추가 확인 또는 팀 내 자금 우선순위 검토 후 재심의합니다.",
+          icon: PauseCircle,
+          color: "border-blue-500 bg-blue-50/20 text-blue-600",
+        },
+        {
+          type: "PASS",
+          label: "PASS (미지원)",
+          desc: "당사 개발 로드맵 부적합 또는 지원 요건 미달로 지원을 패스합니다.",
+          icon: XCircle,
+          color: "border-destructive bg-destructive/10 text-destructive",
+        },
+      ]
+    : [
+        {
+          type: "GO",
+          label: "GO (참여 확정)",
+          desc: "제안서 작성 및 인력 배정을 즉시 착수합니다.",
+          icon: CheckCircle2,
+          color: "border-emerald-500 bg-emerald-50/20 text-emerald-600",
+        },
+        {
+          type: "GO_WITH_CONDITIONS",
+          label: "조건부 GO",
+          desc: "선결 조건(컨소시엄, 인증 갱신 등) 충족 시 참여합니다.",
+          icon: AlertTriangle,
+          color: "border-amber-500 bg-amber-50/20 text-amber-600",
+        },
+        {
+          type: "HOLD",
+          label: "HOLD (보류)",
+          desc: "질의응답 확인 또는 경쟁 구도 추가 분석 후 재심의합니다.",
+          icon: PauseCircle,
+          color: "border-blue-500 bg-blue-50/20 text-blue-600",
+        },
+        {
+          type: "NO_GO",
+          label: "NO-GO (불참)",
+          desc: "수익성 미달, 실적 요건 불충족 등으로 입찰을 포기합니다.",
+          icon: XCircle,
+          color: "border-destructive bg-destructive/10 text-destructive",
+        },
+      ];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-in fade-in">

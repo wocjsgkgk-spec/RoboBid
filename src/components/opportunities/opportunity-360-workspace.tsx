@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
+import Link from "next/link";
 import {
   Opportunity,
   OpportunityScore,
@@ -35,6 +36,9 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { projectConceptStore } from "@/lib/concepts/concept-store";
+import { SemanticMatcherService } from "@/lib/matching/semantic-matcher-service";
+import { FourteenAxisProfileCard } from "@/components/evaluation/fourteen-axis-profile-card";
 
 interface Opportunity360WorkspaceProps {
   opportunity: Opportunity;
@@ -83,6 +87,18 @@ export function Opportunity360Workspace({
   const diffTime = deadlineDate.getTime() - now.getTime();
   const daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   const isUrgent = daysRemaining <= 3 && daysRemaining >= 0;
+
+  // Concept & 14-Axis Semantic Match Calculation
+  const concepts = useMemo(() => projectConceptStore.getAll(), []);
+  const activeConcept = concepts[0];
+  const spec = useMemo(
+    () => (activeConcept ? projectConceptStore.getMasterSpec(activeConcept.id) : undefined),
+    [activeConcept]
+  );
+  const matchResult = useMemo(() => {
+    if (!activeConcept) return null;
+    return SemanticMatcherService.evaluate(activeConcept, spec, opportunity, []);
+  }, [activeConcept, spec, opportunity]);
 
   // Key Metrics
   const currentDecision = decision?.decision || (opportunity.status === "GO" ? "GO" : "PENDING");
@@ -140,6 +156,15 @@ export function Opportunity360Workspace({
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2 shrink-0">
+          <Link href={`/applications/${opportunity.id}`}>
+            <Button
+              size="sm"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs shadow-md"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 mr-1.5" />
+              Application Workspace
+            </Button>
+          </Link>
           {currentDecision === "GO" && onNavigateToBidRoom && (
             <Button
               size="sm"
@@ -208,10 +233,18 @@ export function Opportunity360Workspace({
         <div className="flex flex-col bg-slate-900/90 rounded-lg p-2.5 border border-slate-800">
           <span className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Decision</span>
           <div className="flex items-center gap-1.5 mt-1 font-bold text-sm">
-            {currentDecision === "GO" ? (
-              <Badge className="bg-emerald-600 text-white text-[11px] font-bold">GO 확정</Badge>
-            ) : currentDecision === "NO_GO" ? (
-              <Badge className="bg-rose-600 text-white text-[11px] font-bold">NO-GO</Badge>
+            {currentDecision === "GO" || currentDecision === "APPLY" ? (
+              <Badge className="bg-emerald-600 text-white text-[11px] font-bold">
+                {currentDecision === "APPLY" ? "APPLY 확정" : "GO 확정"}
+              </Badge>
+            ) : currentDecision === "GO_WITH_CONDITIONS" || currentDecision === "APPLY_WITH_CONDITIONS" ? (
+              <Badge className="bg-emerald-700 text-white text-[11px] font-bold">
+                {currentDecision === "APPLY_WITH_CONDITIONS" ? "조건부 지원" : "조건부 GO"}
+              </Badge>
+            ) : currentDecision === "NO_GO" || currentDecision === "PASS" ? (
+              <Badge className="bg-rose-600 text-white text-[11px] font-bold">
+                {currentDecision === "PASS" ? "PASS 미지원" : "NO-GO"}
+              </Badge>
             ) : currentDecision === "HOLD" ? (
               <Badge className="bg-amber-500 text-white text-[11px] font-bold">HOLD 보류</Badge>
             ) : (
@@ -573,26 +606,34 @@ export function Opportunity360Workspace({
           </div>
         )}
 
-        {/* TAB 4: FIT */}
+        {/* TAB 4: FIT — 14-Axis Semantic Match & Capability Evaluation */}
         {activeTab === "fit" && (
           <div className="space-y-4 animate-in fade-in duration-150">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 p-4">
-                <div className="text-xs text-slate-500 font-medium">기술 적합도 (Tech Fit)</div>
-                <div className="text-2xl font-bold text-blue-600 font-mono mt-1">94점</div>
-                <p className="text-[11px] text-slate-500 mt-1">SLAM 및 자율주행 로봇 특허 3건 보유</p>
-              </Card>
-              <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 p-4">
-                <div className="text-xs text-slate-500 font-medium">실적 적합도 (Experience)</div>
-                <div className="text-2xl font-bold text-emerald-600 font-mono mt-1">88점</div>
-                <p className="text-[11px] text-slate-500 mt-1">유사 정부과제 수주 및 납품 실적 4건</p>
-              </Card>
-              <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 p-4">
-                <div className="text-xs text-slate-500 font-medium">인력/조직 역량 (Team)</div>
-                <div className="text-2xl font-bold text-purple-600 font-mono mt-1">90점</div>
-                <p className="text-[11px] text-slate-500 mt-1">로봇 소프트웨어 박사급 책임자 및 전담 연구원 완비</p>
-              </Card>
-            </div>
+            {matchResult && activeConcept ? (
+              <FourteenAxisProfileCard
+                matchResult={matchResult}
+                conceptName={activeConcept.name}
+                opportunityTitle={opportunity.title}
+              />
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 p-4">
+                  <div className="text-xs text-slate-500 font-medium">기술 적합도 (Tech Fit)</div>
+                  <div className="text-2xl font-bold text-blue-600 font-mono mt-1">94점</div>
+                  <p className="text-[11px] text-slate-500 mt-1">SLAM 및 자율주행 로봇 특허 3건 보유</p>
+                </Card>
+                <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 p-4">
+                  <div className="text-xs text-slate-500 font-medium">실적 적합도 (Experience)</div>
+                  <div className="text-2xl font-bold text-emerald-600 font-mono mt-1">88점</div>
+                  <p className="text-[11px] text-slate-500 mt-1">유사 정부과제 수주 및 납품 실적 4건</p>
+                </Card>
+                <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 p-4">
+                  <div className="text-xs text-slate-500 font-medium">인력/조직 역량 (Team)</div>
+                  <div className="text-2xl font-bold text-purple-600 font-mono mt-1">90점</div>
+                  <p className="text-[11px] text-slate-500 mt-1">로봇 소프트웨어 박사급 책임자 및 전담 연구원 완비</p>
+                </Card>
+              </div>
+            )}
           </div>
         )}
 

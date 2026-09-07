@@ -19,6 +19,10 @@ import {
   Send,
   FileText,
   Briefcase,
+  Target,
+  TrendingUp,
+  PieChart,
+  BellRing,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -518,7 +522,156 @@ export default function TodayPage() {
         </CardContent>
       </Card>
 
-      {/* 6. Section: 실전 입찰 전략 툴킷 (Quick BidOps Hub) */}
+      {/* 6. Section: v3 Portfolio Advisor & 연간 목표 대비 Gap 분석 */}
+      {summary?.portfolioGap && (
+        <Card className="border-primary/30 bg-primary/[0.02]">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Target className="h-5 w-5 text-primary" />
+                <div>
+                  <CardTitle className="text-base font-bold">Funding Portfolio Advisor & 목표 Gap 분석</CardTitle>
+                  <CardDescription className="text-xs">
+                    연간 목표 정부지원금 대비 현재 선정 과제 및 심의 중 과제 실시간 달성률
+                  </CardDescription>
+                </div>
+              </div>
+              <Badge variant="outline" className="text-xs border-primary/40 text-primary">
+                목표 {(summary.portfolioGap.targetAnnualGrant / 100_000_000).toFixed(0)}억 원
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Progress Bar */}
+            <div>
+              <div className="flex justify-between text-xs mb-1.5">
+                <span className="font-semibold text-foreground">
+                  확정 지원금: {(summary.portfolioGap.awardedTotalGrant / 100_000_000).toFixed(1)}억 ({summary.portfolioGap.achievementRatePercent}%)
+                  {summary.portfolioGap.inFlightTotalGrant > 0 && (
+                    <span className="text-muted-foreground ml-1.5 font-normal">
+                      · 심의 중 포함 잠재: {( (summary.portfolioGap.awardedTotalGrant + summary.portfolioGap.inFlightTotalGrant) / 100_000_000).toFixed(1)}억 ({summary.portfolioGap.inFlightPotentialPercent}%)
+                    </span>
+                  )}
+                </span>
+                <span className="font-mono text-destructive font-bold">
+                  Gap: {(summary.portfolioGap.gapAmount / 100_000_000).toFixed(1)}억 원
+                </span>
+              </div>
+              <div className="w-full h-3 bg-muted rounded-full overflow-hidden flex">
+                <div
+                  className="bg-emerald-500 h-full transition-all duration-500"
+                  style={{ width: `${summary.portfolioGap.achievementRatePercent}%` }}
+                  title="확정 지원금"
+                />
+                <div
+                  className="bg-primary/50 h-full transition-all duration-500"
+                  style={{ width: `${Math.max(0, summary.portfolioGap.inFlightPotentialPercent - summary.portfolioGap.achievementRatePercent)}%` }}
+                  title="심의 중 잠재 지원금"
+                />
+              </div>
+            </div>
+
+            {/* Advisor Recommendations */}
+            {summary.portfolioGap.recommendations.length > 0 && (
+              <div className="space-y-2 pt-2 border-t">
+                <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                  <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                  AI Portfolio Advisor 실시간 권고안
+                </span>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                  {summary.portfolioGap.recommendations.map((rec) => (
+                    <div
+                      key={rec.id}
+                      className="p-2.5 rounded-lg border bg-background/80 text-xs flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <span className="font-semibold text-foreground truncate">{rec.title}</span>
+                          <Badge
+                            variant={rec.priority === "HIGH" ? "destructive" : "secondary"}
+                            className="text-[10px] shrink-0"
+                          >
+                            {rec.priority}
+                          </Badge>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground line-clamp-2">{rec.description}</p>
+                      </div>
+                      <div className="mt-2 text-right">
+                        <Link href={rec.actionableLink} className="text-[11px] text-primary hover:underline font-medium inline-flex items-center gap-1">
+                          바로가기 <ArrowRight className="h-3 w-3" />
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* 7. Section: Early Signal Engine & 공고 캘린더 예측 피드 */}
+      {summary?.earlySignals && summary.earlySignals.length > 0 && (
+        <Card className="border-amber-500/30 bg-amber-500/[0.02]">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Radio className="h-5 w-5 text-amber-500 animate-pulse" />
+                <div>
+                  <CardTitle className="text-base font-bold">Early Signal & 공고 캘린더 사전 예측</CardTitle>
+                  <CardDescription className="text-xs">
+                    정식 공고 전 사업시행계획, 수요조사, 사전예고 신호 추적 (참고용 분석 정보)
+                  </CardDescription>
+                </div>
+              </div>
+              <Badge variant="outline" className="text-xs border-amber-500/40 text-amber-600">
+                신호 {summary.earlySignals.length}건 포착
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="divide-y divide-border/60">
+              {summary.earlySignals.map((sig) => (
+                <div key={sig.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-semibold text-xs text-foreground">{sig.title}</span>
+                      <Badge variant="secondary" className="text-[10px]">
+                        {sig.agency}
+                      </Badge>
+                      <Badge
+                        variant="outline"
+                        className={`text-[10px] ${
+                          sig.announcementForecast.confidence === "HIGH"
+                            ? "border-emerald-500/30 text-emerald-600"
+                            : "border-amber-500/30 text-amber-600"
+                        }`}
+                      >
+                        신뢰도: {sig.announcementForecast.confidence}
+                      </Badge>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 font-mono">
+                        참고용 예측 (비공식)
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      예상 시기: <span className="text-foreground font-medium">{sig.announcementForecast.expectedPeriod}</span> · 근거: {sig.announcementForecast.rationale}
+                    </p>
+                  </div>
+                  <div className="shrink-0 flex items-center gap-2">
+                    <Link href={`/intelligence`}>
+                      <Button variant="outline" size="sm" className="text-xs h-7 gap-1">
+                        신호 상세 <ArrowRight className="h-3 w-3" />
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* 8. Section: 실전 입찰 전략 툴킷 (Quick BidOps Hub) */}
       <div className="p-4 rounded-xl border bg-card/60 backdrop-blur-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">

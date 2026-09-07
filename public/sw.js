@@ -1,4 +1,4 @@
-const CACHE_NAME = 'robobid-ai-v1';
+const CACHE_NAME = 'robobid-ai-v3';
 const OFFLINE_URL = '/offline.html';
 
 const STATIC_ASSETS = [

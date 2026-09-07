@@ -31,12 +31,17 @@ import { KonepsPricingModal } from "@/components/bidding/koneps-pricing-modal";
 import { BidDecisionModal } from "@/components/opportunities/bid-decision-modal";
 import { Opportunity360Workspace } from "@/components/opportunities/opportunity-360-workspace";
 import { opportunityStore } from "@/lib/opportunities/opportunity-store";
+import { FundingTaxonomyService } from "@/lib/funding/funding-taxonomy-service";
 import { Opportunity, BidType } from "@/types";
 
 export default function OpportunitiesPage() {
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [selected360Opportunity, setSelected360Opportunity] = useState<Opportunity | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<"ALL" | "GOV_FUNDING" | "PROCUREMENT">("ALL");
+  const [selectedFundingType, setSelectedFundingType] = useState("ALL");
+  const [selectedApplicantStage, setSelectedApplicantStage] = useState("ALL");
+  const [selectedOriginSource, setSelectedOriginSource] = useState("ALL");
   const [selectedType, setSelectedType] = useState("ALL");
   const [selectedStatus, setSelectedStatus] = useState("ALL");
   const [viewMode, setViewMode] = useState<"TABLE" | "KANBAN">("TABLE");
@@ -236,8 +241,38 @@ export default function OpportunitiesPage() {
   };
 
   const filteredOpps = opportunities.filter((opp) => {
+    // 1. Category Filter (GOV_FUNDING vs PROCUREMENT)
+    if (selectedCategory !== "ALL") {
+      const cat = FundingTaxonomyService.getCategory(opp.fundingType || "");
+      if (cat !== selectedCategory) return false;
+    }
+
+    // 2. Funding Type Filter
+    if (selectedFundingType !== "ALL" && opp.fundingType !== selectedFundingType) {
+      return false;
+    }
+
+    // 3. Applicant Stage Filter
+    if (
+      selectedApplicantStage !== "ALL" &&
+      !(opp.applicantStages || []).includes(selectedApplicantStage)
+    ) {
+      return false;
+    }
+
+    // 4. Origin Source Filter
+    if (
+      selectedOriginSource !== "ALL" &&
+      (opp.originSource || "").toUpperCase() !== selectedOriginSource
+    ) {
+      return false;
+    }
+
+    // 5. Legacy BidType and Status
     if (selectedType !== "ALL" && opp.bidType !== selectedType) return false;
     if (selectedStatus !== "ALL" && opp.status !== selectedStatus) return false;
+
+    // 6. Text Search
     if (
       searchQuery &&
       !opp.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
@@ -325,11 +360,51 @@ export default function OpportunitiesPage() {
         </div>
       </div>
 
-      {/* 3. Filters Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+      {/* 3. v3 Category Tabs: 정부지원사업 vs 공공조달 분리 (조달/지원사업 혼동 방지) */}
+      <div className="flex items-center gap-2 border-b pb-2 flex-wrap">
+        <button
+          onClick={() => setSelectedCategory("ALL")}
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+            selectedCategory === "ALL"
+              ? "bg-foreground text-background shadow-sm"
+              : "text-muted-foreground hover:bg-muted"
+          }`}
+        >
+          전체 보기 ({opportunities.length})
+        </button>
+        <button
+          onClick={() => setSelectedCategory("GOV_FUNDING")}
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 ${
+            selectedCategory === "GOV_FUNDING"
+              ? "bg-emerald-600 text-white shadow-sm"
+              : "text-emerald-700 bg-emerald-50 hover:bg-emerald-100"
+          }`}
+        >
+          <span>정부지원사업 · R&D (P0)</span>
+          <span className="text-[10px] bg-white/30 px-1.5 py-0.2 rounded-full">
+            {opportunities.filter((o) => FundingTaxonomyService.getCategory(o.fundingType || "") === "GOV_FUNDING").length}
+          </span>
+        </button>
+        <button
+          onClick={() => setSelectedCategory("PROCUREMENT")}
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 ${
+            selectedCategory === "PROCUREMENT"
+              ? "bg-blue-600 text-white shadow-sm"
+              : "text-blue-700 bg-blue-50 hover:bg-blue-100"
+          }`}
+        >
+          <span>공공 로봇 도입 · 구매</span>
+          <span className="text-[10px] bg-white/30 px-1.5 py-0.2 rounded-full">
+            {opportunities.filter((o) => FundingTaxonomyService.getCategory(o.fundingType || "") === "PROCUREMENT").length}
+          </span>
+        </button>
+      </div>
+
+      {/* 4. Detailed Taxonomy Filters Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs flex-wrap">
         <div className="flex items-center gap-2 flex-wrap">
           {/* Search */}
-          <div className="relative w-full sm:w-64">
+          <div className="relative w-full sm:w-56">
             <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
             <input
               type="text"
@@ -340,21 +415,60 @@ export default function OpportunitiesPage() {
             />
           </div>
 
-          {/* BidType filter */}
+          {/* FundingType filter (15종) */}
           <select
-            value={selectedType}
-            onChange={(e) => setSelectedType(e.target.value)}
+            value={selectedFundingType}
+            onChange={(e) => setSelectedFundingType(e.target.value)}
+            className="h-8 px-2 bg-card border rounded-md text-foreground focus:outline-none font-medium"
+          >
+            <option value="ALL">전체 지원유형 (15종)</option>
+            <option value="GOV_RND">정부 R&D (출연금)</option>
+            <option value="LOCAL_RND">지자체 R&D</option>
+            <option value="STARTUP_GRANT">창업지원금</option>
+            <option value="PROTOTYPE_GRANT">시제품제작지원</option>
+            <option value="VALIDATION_GRANT">실증/PoC사업</option>
+            <option value="COMMERCIALIZATION">사업화지원</option>
+            <option value="COMPETITION">경진대회/챌린지</option>
+            <option value="CONTEST">공모전</option>
+            <option value="PRIZE">상금/어워드</option>
+            <option value="EXHIBITION">전시지원</option>
+            <option value="EXPORT">수출지원</option>
+            <option value="SALES_SUPPORT">판로개척지원</option>
+            <option value="PROCUREMENT">공공조달 (물품구매)</option>
+            <option value="SERVICE_CONTRACT">공공 과제/위탁</option>
+            <option value="OTHER">기타</option>
+          </select>
+
+          {/* ApplicantStage filter (11종) */}
+          <select
+            value={selectedApplicantStage}
+            onChange={(e) => setSelectedApplicantStage(e.target.value)}
             className="h-8 px-2 bg-card border rounded-md text-foreground focus:outline-none"
           >
-            <option value="ALL">전체 사업유형</option>
-            <option value="R_AND_D">R&D 기술개발</option>
-            <option value="DEMONSTRATION">실증사업</option>
-            <option value="SUBSIDY_SUPPORT">정부지원사업</option>
-            <option value="PROCUREMENT">구매·조달</option>
-            <option value="SERVICE">용역</option>
-            <option value="LOCAL_GOV">지자체 공모</option>
-            <option value="NATIONAL_PROJECT">국비사업</option>
-            <option value="PPP">민관협력(PPP)</option>
+            <option value="ALL">전체 지원대상 단계</option>
+            <option value="PRE_STARTUP">예비창업자</option>
+            <option value="STARTUP_UNDER_3Y">초기창업 (3년 미만)</option>
+            <option value="STARTUP_UNDER_7Y">도약창업 (7년 미만)</option>
+            <option value="SME">중소기업</option>
+            <option value="VENTURE">벤처기업</option>
+            <option value="INNOBIZ">이노비즈</option>
+            <option value="CORPORATE_RESEARCH_CENTER">기업부설연구소</option>
+            <option value="LOCAL_COMPANY">지역소재기업</option>
+            <option value="CONSORTIUM">산학연 컨소시엄</option>
+          </select>
+
+          {/* OriginSource filter */}
+          <select
+            value={selectedOriginSource}
+            onChange={(e) => setSelectedOriginSource(e.target.value)}
+            className="h-8 px-2 bg-card border rounded-md text-foreground focus:outline-none font-mono"
+          >
+            <option value="ALL">전체 출처 (All Sources)</option>
+            <option value="BIZINFO">중기부 기업마당 (Bizinfo)</option>
+            <option value="KONEPS">조달청 나라장터 (KONEPS)</option>
+            <option value="TIPA">중소기업기술정보진흥원 (TIPA)</option>
+            <option value="IRIS">범부처연구지원시스템 (IRIS)</option>
+            <option value="MANUAL">사용자 직접등록 (MANUAL)</option>
           </select>
 
           {/* Status filter */}
@@ -402,32 +516,73 @@ export default function OpportunitiesPage() {
                     <tr key={opp.id} className="hover:bg-muted/20 transition-colors">
                       <td className="p-3">
                         <div className="flex flex-col gap-1">
-                          <span
-                            className={`text-[10px] font-bold px-1.5 py-0.2 rounded w-fit ${
-                              opp.status === "GO"
-                                ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
-                                : opp.status === "HOLD"
-                                ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
-                                : opp.status === "NO_GO"
-                                ? "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300"
-                                : "bg-muted text-muted-foreground"
-                            }`}
-                          >
-                            {opp.status}
-                          </span>
-                          <span className="text-[9px] font-mono text-muted-foreground">
-                            {opp.dataSource || "DEMO"}
-                          </span>
+                          <div className="flex items-center gap-1 flex-wrap">
+                            {FundingTaxonomyService.getCategory(opp.fundingType || "") === "GOV_FUNDING" ? (
+                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                정부지원금
+                              </span>
+                            ) : (
+                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 border border-blue-200">
+                                공공조달
+                              </span>
+                            )}
+                            <span
+                              className={`text-[9px] font-mono px-1 py-0.2 rounded ${
+                                opp.originSource === "BIZINFO"
+                                  ? "bg-amber-100 text-amber-800"
+                                  : opp.originSource === "TIPA"
+                                  ? "bg-purple-100 text-purple-800"
+                                  : "bg-slate-100 text-slate-700"
+                              }`}
+                            >
+                              {opp.originSource || "KONEPS"}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-1 flex-wrap">
+                            <span
+                              className={`text-[10px] font-bold px-1.5 py-0.2 rounded w-fit ${
+                                opp.status === "GO"
+                                  ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                                  : opp.status === "HOLD"
+                                  ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+                                  : opp.status === "NO_GO"
+                                  ? "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300"
+                                  : "bg-muted text-muted-foreground"
+                              }`}
+                            >
+                              {opp.status}
+                            </span>
+                            {opp.signalStage && (
+                              <span
+                                className={`text-[9px] px-1 py-0.2 rounded border ${
+                                  FundingTaxonomyService.getEarlySignalLabel(opp.signalStage).color
+                                }`}
+                              >
+                                {FundingTaxonomyService.getEarlySignalLabel(opp.signalStage).label}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </td>
                       <td className="p-3">
-                        <div className="flex flex-col gap-0.5">
-                          <span className="font-semibold text-foreground line-clamp-1">
+                        <div className="flex flex-col gap-1">
+                          <span className="font-semibold text-foreground line-clamp-1 text-xs">
                             {opp.title}
                           </span>
-                          <span className="text-[11px] text-muted-foreground">
-                            {opp.announcingAgency}
-                          </span>
+                          <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-muted-foreground">
+                            <span>{opp.announcingAgency}</span>
+                            <span className="text-muted-foreground/40">•</span>
+                            <Badge variant="outline" className="text-[10px] bg-slate-50 text-slate-700">
+                              {FundingTaxonomyService.getFundingTypeLabel(opp.fundingType || "GOV_RND")}
+                            </Badge>
+                            {opp.applicantStages && opp.applicantStages.length > 0 && (
+                              <span className="text-[10px] text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded">
+                                대상: {opp.applicantStages.map((s) => FundingTaxonomyService.getApplicantStageLabel(s)).slice(0, 2).join(", ")}
+                                {opp.applicantStages.length > 2 ? ` 외 ${opp.applicantStages.length - 2}건` : ""}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </td>
                       <td className="p-3">
@@ -594,7 +749,7 @@ export default function OpportunitiesPage() {
                     <option value="DEMONSTRATION">실증사업</option>
                     <option value="SUBSIDY_SUPPORT">정부지원사업</option>
                     <option value="PROCUREMENT">구매·조달</option>
-                    <option value="SERVICE">용역</option>
+                    <option value="SERVICE">전문과제</option>
                     <option value="LOCAL_GOV">지자체 공모</option>
                     <option value="NATIONAL_PROJECT">국비사업</option>
                     <option value="PPP">민관협력</option>

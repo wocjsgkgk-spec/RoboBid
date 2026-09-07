@@ -10,7 +10,8 @@ export class CrossReviewEngine {
   public async reviewAsync(
     proposal: Proposal,
     sections: ProposalSection[],
-    matrixItems: RequirementMatrixItem[] = []
+    matrixItems: RequirementMatrixItem[] = [],
+    fundingType?: string
   ): Promise<CrossReviewResult> {
     const llm = LLMClient.getInstance();
     const activeProvider = llm.getActiveProvider();
@@ -22,7 +23,7 @@ export class CrossReviewEngine {
           .map((s) => `### [${s.sectionCode}] ${s.title}\n${s.contentMarkdown.slice(0, 500)}...`)
           .join('\n\n');
 
-        const prompt = `당신은 공공조달 및 국가 R&D 전문 심사위원단입니다.
+        const prompt = `당신은 ${fundingType ? `[${fundingType}] 지원사업` : "공공조달 및 국가 R&D"} 전문 심사위원단입니다.
 제안서 제목: "${proposal.title}"
 섹션 요약:
 ${sectionsSummary}
@@ -38,7 +39,7 @@ ${sectionsSummary}
 
         const res = await llm.generate({
           messages: [
-            { role: "system", content: "한국 공공입찰 전문 평가위원 역할을 수행하며 엄격하고 공정한 JSON 평가를 제공합니다." },
+            { role: "system", content: `한국 ${fundingType ? `[${fundingType}] 지원사업` : "공공입찰"} 전문 평가위원 역할을 수행하며 엄격하고 공정한 JSON 평가를 제공합니다.` },
             { role: "user", content: prompt }
           ],
           responseFormat: "json",
@@ -101,23 +102,81 @@ ${sectionsSummary}
       }
     }
 
-    return this.review(proposal, sections, matrixItems);
+    return this.review(proposal, sections, matrixItems, fundingType);
   }
 
   /**
-   * 4대 전문 에이전트 교차 검토 실행 (룰베이스)
+   * 4대 전문 에이전트 교차 검토 실행 (룰베이스, 지원유형별 페르소나 적용)
    */
   public review(
     proposal: Proposal,
     sections: ProposalSection[],
-    matrixItems: RequirementMatrixItem[] = []
+    matrixItems: RequirementMatrixItem[] = [],
+    fundingType?: string
   ): CrossReviewResult {
-    const findings: CrossReviewFinding[] = [
+    const rawFindings: CrossReviewFinding[] = [
       this.reviewStrategy(proposal, sections),
       this.reviewFinancial(proposal, sections),
       this.reviewTechnical(proposal, sections),
       this.reviewCompliance(proposal, sections, matrixItems),
     ];
+
+    // 사업 유형별 페르소나 적용
+    const fType = (fundingType || "").toUpperCase();
+    const findings: CrossReviewFinding[] = rawFindings.map((f) => {
+      if (fType === "R_AND_D" || fType === "GOV_RND" || fType === "LOCAL_RND") {
+        if (f.role === "TECHNICAL") {
+          return { ...f, agentName: "기술전문가 심사위원 (R&D Technical Excellence)", title: "연구개발 목표 및 핵심 알고리즘 독창성 검증" };
+        } else if (f.role === "STRATEGY") {
+          return { ...f, agentName: "사업화전문가 심사위원 (R&D Commercialization)", title: "연구개발 성과 활용방안 및 사업화 로드맵 검증" };
+        } else if (f.role === "COMPLIANCE") {
+          return { ...f, agentName: "연구관리전문가 심사위원 (R&D Management & WBS)", title: "마일스톤 WBS 및 국가연구개발혁신법 준수 검증" };
+        } else if (f.role === "FINANCIAL") {
+          return { ...f, agentName: "재무/예산 심사위원 (R&D Budget & Costs)", title: "비목별 사업비 편성 및 민간부담금 매칭 검증" };
+        }
+      } else if (fType === "STARTUP_GRANT" || fType === "TIPA_MSS") {
+        if (f.role === "STRATEGY") {
+          return { ...f, agentName: "BM/비즈니스모델 평가위원 (Startup BM Reviewer)", title: "수익 모델 및 고객 Pain Point 해결력 검증" };
+        } else if (f.role === "TECHNICAL") {
+          return { ...f, agentName: "시장성/성장성 평가위원 (Market Sizing Reviewer)", title: "타겟 시장 규모 및 경쟁사 대비 비교우위 검증" };
+        } else if (f.role === "COMPLIANCE") {
+          return { ...f, agentName: "팀 역량 평가위원 (Founding Team Reviewer)", title: "대표자 및 핵심 개발팀의 기술 전문성 평가" };
+        } else if (f.role === "FINANCIAL") {
+          return { ...f, agentName: "자금소요 타당성 평가위원 (Budget Feasibility Reviewer)", title: "시제품 제작 및 마케팅 자금 집행 계획 검증" };
+        }
+      } else if (fType === "VALIDATION_GRANT" || fType === "DEMONSTRATION") {
+        if (f.role === "TECHNICAL") {
+          return { ...f, agentName: "기술 완성도 심사위원 (System Maturity Reviewer)", title: "로봇 플랫폼 완성도 및 TRL 6+ 신뢰성 검증" };
+        } else if (f.role === "COMPLIANCE") {
+          return { ...f, agentName: "현장성·안전성 심사위원 (Site Safety Reviewer)", title: "수요기업 테스트베드 적합성 및 작업장 안전 대책 검증" };
+        } else if (f.role === "STRATEGY") {
+          return { ...f, agentName: "정량적 KPI 심사위원 (Quantitative Target Reviewer)", title: "정량적 성능지표(속도/정밀도) 및 KOLAS 공인시험 계획 평가" };
+        } else if (f.role === "FINANCIAL") {
+          return { ...f, agentName: "확산 파급력 심사위원 (Diffusion & Scaling Reviewer)", title: "실증 후 동종 산업계 보급 확산성 평가" };
+        }
+      } else if (fType === "COMMERCIALIZATION" || fType === "EXPORT") {
+        if (f.role === "STRATEGY") {
+          return { ...f, agentName: "판로개척 전문가 (Sales Channel Reviewer)", title: "B2B 영업 파이프라인 및 바이어 발굴 전략 평가" };
+        } else if (f.role === "COMPLIANCE") {
+          return { ...f, agentName: "해외인증·수출 심사위원 (Global Certification Reviewer)", title: "CE/KC 규격 인증 및 글로벌 현지화 적합성 검증" };
+        } else if (f.role === "TECHNICAL") {
+          return { ...f, agentName: "마케팅·전시 심사위원 (Marketing Strategy Reviewer)", title: "전시회 부스 및 브랜딩 판로 전략 검증" };
+        } else if (f.role === "FINANCIAL") {
+          return { ...f, agentName: "매출실현 심사위원 (Revenue Milestone Reviewer)", title: "제품 양산화 단가 및 연간 매출 실현 가능성 평가" };
+        }
+      } else if (fType === "PROCUREMENT" || fType === "SERVICE_CONTRACT") {
+        if (f.role === "COMPLIANCE") {
+          return { ...f, agentName: "행정·자격 심사위원 (Administrative Reviewer)", title: "입찰 참가자격 및 신용평가 적격성 검증" };
+        } else if (f.role === "TECHNICAL") {
+          return { ...f, agentName: "규격·기술 심사위원 (Technical Specification Reviewer)", title: "과업지시서 규격 100% 충족 및 기술 아키텍처 검증" };
+        } else if (f.role === "FINANCIAL") {
+          return { ...f, agentName: "가격·원가 심사위원 (Pricing Reviewer)", title: "투찰 가격 적정성 및 A값 고정비 반영 검증" };
+        } else if (f.role === "STRATEGY") {
+          return { ...f, agentName: "사업수행능력 심사위원 (Execution Capability Reviewer)", title: "납품 일정 준수율 및 하자보수 SLA 체계 평가" };
+        }
+      }
+      return f;
+    });
 
     const overallScore = Math.round(
       findings.reduce((sum, f) => sum + f.score, 0) / findings.length

@@ -217,7 +217,7 @@ export class KonepsAdapter extends BaseProviderAdapter {
       const pDd = String(prev.getDate()).padStart(2, "0");
       const prevStr = `${pYyyy}${pMm}${pDd}`;
 
-      const endpoint = `https://apis.data.go.kr/1230000/ad/BidPublicInfoService/getBidPblancListInfoServcPPSSrch?serviceKey=${this.safeEncodeServiceKey(
+      const endpoint = `https://apis.data.go.kr/1230000/ad/BidPublicInfoService/getBidPblancListInfoThngPPSSrch?serviceKey=${this.safeEncodeServiceKey(
         key
       )}&pageNo=${pageNo}&numOfRows=${numOfRows}&inqryDiv=1&inqryBgnDt=${prevStr}0000&inqryEndDt=${todayStr}2359&type=json&bidNtceNm=${encodeURIComponent(
         keyword
@@ -282,14 +282,14 @@ export class KonepsAdapter extends BaseProviderAdapter {
       {
         bidNtceNo: "20260904001",
         bidNtceOrd: "00",
-        bidNtceNm: `2026년 지능형 ${keyword} 도입 및 관제시스템 구축용역`,
+        bidNtceNm: `2026년 지능형 ${keyword} 도입 및 관제시스템 구축`,
         ntceInsttNm: "조달청 (수요기관: 인천항만공사)",
         dminsttNm: "인천항만공사",
         asignBdgtAmt: "450000000",
         presmptPrce: "409090909",
         bidNtceDt: new Date().toISOString(),
         bidClseDt: new Date(Date.now() + 14 * 86400000).toISOString(),
-        srvceDivNm: "용역",
+        srvceDivNm: "물품",
         bidNtceDtlUrl: "https://www.g2b.go.kr",
         ntceSpecDocNm1: "제안요청서_과업지시서.hwp",
         ntceSpecDocUrl1: "https://www.g2b.go.kr/spec1",
@@ -304,7 +304,7 @@ export class KonepsAdapter extends BaseProviderAdapter {
         presmptPrce: "563636364",
         bidNtceDt: new Date().toISOString(),
         bidClseDt: new Date(Date.now() + 21 * 86400000).toISOString(),
-        srvceDivNm: "용역",
+        srvceDivNm: "실증",
         bidNtceDtlUrl: "https://www.g2b.go.kr",
         ntceSpecDocNm1: "과업규격서.pdf",
         ntceSpecDocUrl1: "https://www.g2b.go.kr/spec2",

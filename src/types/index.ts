@@ -34,6 +34,13 @@ export const DataSourceSchema = z.enum([
 export type DataSource = z.infer<typeof DataSourceSchema>;
 
 export const OpportunityStatusSchema = z.enum([
+  // v3 Early Signal & Lifecycle 수명주기
+  "SIGNAL",
+  "EXPECTED",
+  "PRE_ANNOUNCEMENT",
+  "ANNOUNCED",
+  "OPEN",
+  "CLOSING",
   // 14대 업무 수명주기
   "INBOX",
   "NEW",
@@ -157,6 +164,13 @@ export const OpportunitySchema = z.object({
   submissionDeadline: z.string(),
   canonicalUrl: z.string().optional().nullable(),
   status: OpportunityStatusSchema,
+  fundingType: z.string().optional(),
+  projectConceptId: z.string().uuid().nullable().optional(),
+  isEarlySignal: z.boolean().optional(),
+  signalStage: z.string().optional(),
+  allowableCosts: z.record(z.any()).nullable().optional(),
+  applicantStages: z.array(z.string()).optional(),
+  originSource: z.string().optional(),
   dataSource: DataSourceSchema.default("DEMO").optional(),
   decisionHistory: z.array(z.any()).optional(),
   contentHash: z.string(),
@@ -193,3 +207,30 @@ export * from "./project";
 export * from "./pipeline";
 export * from "./task";
 export * from "./evidence";
+export * from "./funding";
+export * from "./concept";
+export * from "./evaluation";
+export * from "./derivation";
+export * from "./award";
+export {
+  OutsourcingTaskCategorySchema,
+  type OutsourcingTaskCategory,
+  OutsourcingPackageStatusSchema,
+  type OutsourcingPackageStatus,
+  CapabilityGapItemSchema as OutsourcingCapabilityGapSchema,
+  type CapabilityGapItem as OutsourcingCapabilityGap,
+  CandidateVendorSchema,
+  type CandidateVendor,
+  ReceivedQuoteSchema,
+  type ReceivedQuote,
+  QuoteEvaluationSchema,
+  type QuoteEvaluation,
+  OutsourcingPackageSchema,
+  type OutsourcingPackage,
+  type CreateOutsourcingPackageInput,
+  type ApproveOutsourcingPackageInput,
+  type EvaluateQuoteInput,
+} from "./outsourcing";
+export * from "./early-signal";
+export * from "./portfolio-advisor";
+
