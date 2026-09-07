@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { FundingFitService } from "@/lib/funding/funding-fit-service";
 import { FundingConflictService } from "@/lib/funding/funding-conflict-service";
 import { FundingPortfolioStore } from "@/lib/funding/funding-portfolio-store";

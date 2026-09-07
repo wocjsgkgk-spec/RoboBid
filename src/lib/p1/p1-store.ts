@@ -9,6 +9,8 @@ import {
   NotificationPreferenceConfig,
   ProposalVersionComparison,
 } from "@/types/p1";
+import { opportunityStore } from "@/lib/opportunities/opportunity-store";
+import { taskStore } from "@/lib/tasks/task-store";
 
 export class P1Store {
   private static instance: P1Store;
@@ -345,26 +347,68 @@ export class P1Store {
 
   // --- Executive Portfolio Methods ---
   public getExecutivePortfolio(): ExecutivePortfolioSummary {
+    const opps = opportunityStore.getAll();
+    const activeOpps = opps.filter((o) =>
+      ["GO", "PROPOSAL_PREP", "PROPOSAL_IN_PROGRESS", "SUBMISSION_READY", "SUBMITTED"].includes(o.status)
+    );
+
+    const now = Date.now();
+    const d14UrgentCount = activeOpps.filter((o) => {
+      if (!o.submissionDeadline) return false;
+      const diffDays = (new Date(o.submissionDeadline).getTime() - now) / 86400000;
+      return diffDays > 0 && diffDays <= 14;
+    }).length;
+
+    const totalPipelineBudget = activeOpps.reduce((sum, o) => sum + (o.allocatedBudget || 0), 0);
+
+    const pipelineBreakdown = {
+      DISCOVERY: opps.filter((o) => ["INBOX", "NEW", "DISCOVERY", "SIGNAL"].includes(o.status)).length,
+      INITIAL_INTEREST: opps.filter((o) => ["REVIEWING", "INITIAL_INTEREST"].includes(o.status)).length,
+      ELIGIBILITY_REVIEW: opps.filter((o) => ["CONDITION_CHECK", "ELIGIBILITY_REVIEW"].includes(o.status)).length,
+      TECH_EVALUATION: 0,
+      BUSINESS_EVALUATION: 0,
+      GO_CONFIRMED: opps.filter((o) => ["GO", "PROPOSAL_PREP", "PROPOSAL_IN_PROGRESS"].includes(o.status)).length,
+      SUBMITTED: opps.filter((o) => ["SUBMITTED"].includes(o.status)).length,
+    };
+
+    // Calculate manager workloads strictly from actual assigned tasks in taskStore
+    const allTasks = taskStore.getAll();
+    const managerMap = new Map<string, { activeCount: number; urgentCount: number; totalBudget: number }>();
+
+    for (const t of allTasks) {
+      if (!t.assignee || t.assignee.trim() === "" || t.assignee === "미지정") continue;
+      const mName = t.assignee.trim();
+      const existing = managerMap.get(mName) || { activeCount: 0, urgentCount: 0, totalBudget: 0 };
+      if (t.status !== "DONE") {
+        existing.activeCount += 1;
+        if (t.priority === "URGENT") {
+          existing.urgentCount += 1;
+        }
+        if (t.opportunityId) {
+          const matchedOpp = opps.find((o) => o.id === t.opportunityId);
+          if (matchedOpp && matchedOpp.allocatedBudget) {
+            existing.totalBudget += matchedOpp.allocatedBudget;
+          }
+        }
+      }
+      managerMap.set(mName, existing);
+    }
+
+    const managerWorkloads = Array.from(managerMap.entries()).map(([managerName, data]) => ({
+      managerName,
+      activeCount: data.activeCount,
+      urgentCount: data.urgentCount,
+      totalBudget: data.totalBudget,
+    }));
+
     return {
-      totalPipelineBudget: 4250000000, // 42.5억원
-      activeBidsCount: 8,
-      d14UrgentCount: 4,
-      highRiskCount: 2,
-      proposalReadyCount: 3,
-      pipelineBreakdown: {
-        DISCOVERY: 3,
-        INITIAL_INTEREST: 1,
-        ELIGIBILITY_REVIEW: 2,
-        TECH_EVALUATION: 2,
-        BUSINESS_EVALUATION: 2,
-        GO_CONFIRMED: 4,
-        SUBMITTED: 1,
-      },
-      managerWorkloads: [
-        { managerName: "김수석 (사업개발팀)", activeCount: 4, urgentCount: 2, totalBudget: 2100000000 },
-        { managerName: "이책임 (로봇연구소)", activeCount: 3, urgentCount: 1, totalBudget: 1450000000 },
-        { managerName: "박선임 (전략기획팀)", activeCount: 2, urgentCount: 1, totalBudget: 700000000 },
-      ],
+      totalPipelineBudget,
+      activeBidsCount: activeOpps.length,
+      d14UrgentCount,
+      highRiskCount: 0,
+      proposalReadyCount: opps.filter((o) => o.status === "SUBMISSION_READY").length,
+      pipelineBreakdown,
+      managerWorkloads,
     };
   }
 

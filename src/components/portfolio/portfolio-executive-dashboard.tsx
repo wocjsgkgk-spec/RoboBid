@@ -34,7 +34,9 @@ export function PortfolioExecutiveDashboard() {
           <div className="text-2xl font-bold font-mono text-primary">
             {(summary.totalPipelineBudget / 100000000).toFixed(1)}억원
           </div>
-          <p className="text-[10px] text-muted-foreground">현재 진행 중인 8개 사업 예산 합계</p>
+          <p className="text-[10px] text-muted-foreground">
+            {summary.activeBidsCount > 0 ? `현재 진행 중인 ${summary.activeBidsCount}개 사업 예산 합계` : "현재 추진 확정된 공모 없음"}
+          </p>
         </div>
 
         <div className="p-4 rounded-xl border bg-card shadow-sm space-y-1">
@@ -45,7 +47,9 @@ export function PortfolioExecutiveDashboard() {
           <div className="text-2xl font-bold font-mono text-indigo-600 dark:text-indigo-400">
             {summary.activeBidsCount}개 사업
           </div>
-          <p className="text-[10px] text-muted-foreground">GO 승인 후 작성 및 검토 중</p>
+          <p className="text-[10px] text-muted-foreground">
+            {summary.activeBidsCount > 0 ? "GO 승인 후 작성 및 검토 중" : "지원 결정(GO) 시 집계 시작"}
+          </p>
         </div>
 
         <div className="p-4 rounded-xl border bg-card shadow-sm space-y-1">
@@ -76,7 +80,7 @@ export function PortfolioExecutiveDashboard() {
             제출 준비 완료율
           </div>
           <div className="text-2xl font-bold font-mono text-emerald-600">
-            {summary.proposalReadyCount}/{summary.activeBidsCount}
+            {summary.activeBidsCount > 0 ? `${summary.proposalReadyCount}/${summary.activeBidsCount}` : "0/0"}
           </div>
           <p className="text-[10px] text-muted-foreground">품질 게이트 80점 이상 충족</p>
         </div>
@@ -148,45 +152,59 @@ export function PortfolioExecutiveDashboard() {
         </CardHeader>
 
         <CardContent className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {summary.managerWorkloads.map((m) => (
-              <div
-                key={m.managerName}
-                className="p-3.5 rounded-xl border bg-card space-y-3 shadow-sm"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-sm text-foreground">
-                    {m.managerName}
-                  </span>
-                  <Badge variant="outline" className="text-xs font-mono">
-                    담당 {(m.totalBudget / 100000000).toFixed(1)}억원
-                  </Badge>
-                </div>
-
-                <div className="space-y-1.5 text-xs text-muted-foreground">
-                  <div className="flex items-center justify-between">
-                    <span>진행 중인 사업:</span>
-                    <strong className="text-foreground">{m.activeCount}건</strong>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>D-14 긴급 마감 과제:</span>
-                    <strong className={m.urgentCount > 1 ? "text-rose-600 font-bold" : "text-foreground"}>
-                      {m.urgentCount}건
-                    </strong>
-                  </div>
-                </div>
-
-                <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
-                  <div
-                    className={`h-2 rounded-full ${
-                      m.urgentCount > 1 ? "bg-rose-500" : "bg-primary"
-                    }`}
-                    style={{ width: `${Math.min(100, m.activeCount * 25)}%` }}
-                  />
-                </div>
+          {summary.managerWorkloads.length === 0 ? (
+            <div className="py-8 text-center space-y-2 border border-dashed rounded-xl">
+              <div className="w-10 h-10 rounded-full bg-muted text-muted-foreground flex items-center justify-center mx-auto">
+                <Users className="w-5 h-5" />
               </div>
-            ))}
-          </div>
+              <p className="text-xs font-semibold text-foreground">
+                현재 배정된 담당자가 없습니다 (클린 상태)
+              </p>
+              <p className="text-[11px] text-muted-foreground max-w-sm mx-auto">
+                아직 결정된 공모가 없거나 업무 담당자가 지정되지 않았습니다. 공모 검토 후 지원 결정(GO)을 내리고 담당자를 지정하면 리소스 부하가 실시간 집계됩니다.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {summary.managerWorkloads.map((m) => (
+                <div
+                  key={m.managerName}
+                  className="p-3.5 rounded-xl border bg-card space-y-3 shadow-sm"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-sm text-foreground">
+                      {m.managerName}
+                    </span>
+                    <Badge variant="outline" className="text-xs font-mono">
+                      담당 {(m.totalBudget / 100000000).toFixed(1)}억원
+                    </Badge>
+                  </div>
+
+                  <div className="space-y-1.5 text-xs text-muted-foreground">
+                    <div className="flex items-center justify-between">
+                      <span>진행 중인 사업:</span>
+                      <strong className="text-foreground">{m.activeCount}건</strong>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>D-14 긴급 마감 과제:</span>
+                      <strong className={m.urgentCount > 1 ? "text-rose-600 font-bold" : "text-foreground"}>
+                        {m.urgentCount}건
+                      </strong>
+                    </div>
+                  </div>
+
+                  <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+                    <div
+                      className={`h-2 rounded-full ${
+                        m.urgentCount > 1 ? "bg-rose-500" : "bg-primary"
+                      }`}
+                      style={{ width: `${Math.min(100, m.activeCount * 25)}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

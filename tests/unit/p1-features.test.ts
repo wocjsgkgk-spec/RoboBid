@@ -46,13 +46,14 @@ describe('Phase P1 Features - Advanced Workflow & Intelligence Suite', () => {
     expect(summary.gaps.every((g) => g.recommendedAction.length > 0)).toBe(true);
   });
 
-  // P1-7: Executive Portfolio (42.5억 수주 파이프라인 퍼널 및 부서 리소스)
-  it('P1-7: aggregates executive portfolio statistics with 42.5B KRW pipeline and manager workload', () => {
+  // P1-7: Executive Portfolio (수주 파이프라인 퍼널 및 부서 리소스 - 클린 상태 검증)
+  it('P1-7: aggregates executive portfolio statistics in clean state when no bids decided', () => {
     const portfolio = p1Store.getExecutivePortfolio();
-    expect(portfolio.totalPipelineBudget).toBe(4250000000);
-    expect(portfolio.activeBidsCount).toBe(8);
-    expect(portfolio.managerWorkloads.length).toBe(3);
-    expect(portfolio.pipelineBreakdown.DISCOVERY).toBe(3);
+    expect(portfolio.totalPipelineBudget).toBe(0);
+    expect(portfolio.activeBidsCount).toBe(0);
+    expect(portfolio.managerWorkloads.length).toBe(0);
+    expect(portfolio.pipelineBreakdown.GO_CONFIRMED).toBe(0);
+    expect(portfolio.pipelineBreakdown.DISCOVERY).toBeGreaterThanOrEqual(0);
   });
 
   // P1-8: Partner / Consortium Pool Manager

@@ -127,7 +127,7 @@ export default function PipelinePage() {
           <p className="text-sm text-muted-foreground mt-1">
             {pipelineViewMode === "FUNNEL"
               ? "수집된 공모를 발견부터 1차 관심, 지원자격, 기술 적합성, 사업성 검증을 거쳐 최종 판단까지 체계적으로 선별합니다."
-              : "수주 목표 대비 파이프라인 금액(42.5억), 부서별 리소스 부하율 및 12개월 타임라인을 경영진 관점에서 조망합니다."}
+              : "수주 목표 대비 파이프라인 금액, 부서별 리소스 부하율 및 추진 타임라인을 경영진 관점에서 실시간 조망합니다."}
           </p>
         </div>
         <div className="flex items-center gap-2">

@@ -43,7 +43,7 @@ const DEFAULT_CHECKLIST: SubmissionCheckItem[] = [
     isMandatory: true,
     isReady: false,
     detail: "RFP 규격 및 제출 서식 준수, 목차/페이지 번호 대조, 원본 및 증빙 첨부 최종본",
-    assignee: "제안 PM",
+    assignee: "미지정",
   },
   {
     id: "sub-02",
@@ -52,7 +52,7 @@ const DEFAULT_CHECKLIST: SubmissionCheckItem[] = [
     isMandatory: true,
     isReady: false,
     detail: "A값(국민연금/건강보험/노인장기요양 등) 비투찰 고정비 반영 및 부가세 포함 금액 대조",
-    assignee: "재무팀",
+    assignee: "미지정",
   },
   {
     id: "sub-03",
@@ -61,7 +61,7 @@ const DEFAULT_CHECKLIST: SubmissionCheckItem[] = [
     isMandatory: true,
     isReady: false,
     detail: "국세청 홈택스 및 중소벤처기업부 발급 최신 유효본 (유효기간 확인 필수)",
-    assignee: "경영지원팀",
+    assignee: "미지정",
   },
   {
     id: "sub-04",
@@ -70,7 +70,7 @@ const DEFAULT_CHECKLIST: SubmissionCheckItem[] = [
     isMandatory: true,
     isReady: false,
     detail: "등기소 인감증명원 원본 스캔본 등록 및 사용인감 날인 대조",
-    assignee: "경영지원팀",
+    assignee: "미지정",
   },
   {
     id: "sub-05",
@@ -79,7 +79,7 @@ const DEFAULT_CHECKLIST: SubmissionCheckItem[] = [
     isMandatory: true,
     isReady: false,
     detail: "대법원 인터넷등기소 최근 3개월 이내 발급분",
-    assignee: "경영지원팀",
+    assignee: "미지정",
   },
   {
     id: "sub-06",
@@ -88,7 +88,7 @@ const DEFAULT_CHECKLIST: SubmissionCheckItem[] = [
     isMandatory: true,
     isReady: false,
     detail: "정부24 및 홈택스 발급분 (입찰일 기준 유효기간 내 증명서)",
-    assignee: "재무팀",
+    assignee: "미지정",
   },
   {
     id: "sub-07",
@@ -97,7 +97,7 @@ const DEFAULT_CHECKLIST: SubmissionCheckItem[] = [
     isMandatory: true,
     isReady: false,
     detail: "동등 이상 또는 유사 물품/용역 수행 실적 증명서 발주처 관인 확인 및 첨부",
-    assignee: "사업개발팀",
+    assignee: "미지정",
   },
   {
     id: "sub-08",
@@ -106,7 +106,7 @@ const DEFAULT_CHECKLIST: SubmissionCheckItem[] = [
     isMandatory: true,
     isReady: false,
     detail: "공고문 별지 서식 대표이사 최종 서명 및 법인 직인 날인 확인",
-    assignee: "규정준수팀",
+    assignee: "미지정",
   },
 ];
 
