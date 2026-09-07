@@ -137,6 +137,12 @@ describe("RoboBid AI v3.0 — Phase 5: Funding Fit, Portfolio & Conflict Engine"
 
     beforeEach(() => {
       portfolioStore = FundingPortfolioStore.getInstance();
+      portfolioStore.clearAll();
+      portfolioStore.seedInitialData();
+    });
+
+    afterEach(() => {
+      portfolioStore.clearAll();
     });
 
     it("Target Cost 대비 Awarded, Under Review, Planned, Candidate가 엄격히 분리 집계된다", () => {

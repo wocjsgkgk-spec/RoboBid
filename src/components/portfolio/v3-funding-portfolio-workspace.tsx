@@ -67,8 +67,8 @@ export function V3FundingPortfolioWorkspace() {
   // Conflict Checker State
   const [conflictReport, setConflictReport] = useState<FundingConflictReport | null>(null);
   const [newOppTitle, setNewOppTitle] = useState("");
-  const [newAgency, setNewAgency] = useState("중소벤처기업부");
-  const [newAmount, setNewAmount] = useState(200_000_000);
+  const [newAgency, setNewAgency] = useState("");
+  const [newAmount, setNewAmount] = useState<number | "">("");
   const [newStatus, setNewStatus] = useState<FundingPortfolioStatus>("CANDIDATE");
   const [showAddModal, setShowAddModal] = useState(false);
 
@@ -198,6 +198,7 @@ export function V3FundingPortfolioWorkspace() {
       alert("공고명을 입력해주세요.");
       return;
     }
+    const amountNumber = Number(newAmount) || 0;
     try {
       const res = await fetch("/api/portfolio", {
         method: "POST",
@@ -205,28 +206,47 @@ export function V3FundingPortfolioWorkspace() {
         body: JSON.stringify({
           projectConceptId: selectedProjectId,
           opportunityTitle: newOppTitle,
-          announcingAgency: newAgency,
-          targetGrantAmount: Number(newAmount),
-          awardedGrantAmount: newStatus === "AWARDED" ? Number(newAmount) : 0,
+          announcingAgency: newAgency || "전담기관 미지정",
+          targetGrantAmount: amountNumber,
+          awardedGrantAmount: newStatus === "AWARDED" ? amountNumber : 0,
           status: newStatus,
           period: {
             startDate: "2026-06-01",
             endDate: "2027-05-31",
           },
           allocatedCategories: {
-            LABOR: Math.round(Number(newAmount) * 0.4),
-            PARTS: Math.round(Number(newAmount) * 0.3),
-            OUTSOURCING: Math.round(Number(newAmount) * 0.3),
+            LABOR: Math.round(amountNumber * 0.4),
+            PARTS: Math.round(amountNumber * 0.3),
+            OUTSOURCING: Math.round(amountNumber * 0.3),
           },
         }),
       });
       if (res.ok) {
         setShowAddModal(false);
         setNewOppTitle("");
+        setNewAgency("");
+        setNewAmount("");
         loadData();
       }
     } catch (e) {
       console.error("Failed to add portfolio item:", e);
+    }
+  };
+
+  const handleClearPortfolio = async () => {
+    if (!confirm("포트폴리오의 모든 지원사업 내역을 초기화하시겠습니까?")) return;
+    try {
+      const res = await fetch("/api/portfolio", {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("robobid_funding_portfolio_v3");
+        }
+        loadData();
+      }
+    } catch (e) {
+      console.error("Failed to clear portfolio:", e);
     }
   };
 
@@ -268,6 +288,18 @@ export function V3FundingPortfolioWorkspace() {
               ))}
             </select>
           </div>
+
+          {summary && summary.items.length > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleClearPortfolio}
+              className="text-xs gap-1.5 text-muted-foreground hover:text-rose-600 border-muted"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              전체 초기화
+            </Button>
+          )}
 
           <Button
             size="sm"
@@ -436,7 +468,29 @@ export function V3FundingPortfolioWorkspace() {
             </div>
           </CardHeader>
           <CardContent className="p-0 divide-y">
-            {summary.items.map((item) => {
+            {summary.items.length === 0 ? (
+              <div className="p-12 text-center space-y-4">
+                <div className="w-12 h-12 rounded-2xl bg-muted text-muted-foreground flex items-center justify-center mx-auto">
+                  <Layers className="w-6 h-6" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-base font-bold text-foreground">
+                    등록된 지원사업이 없습니다 (클린 상태)
+                  </h3>
+                  <p className="text-xs text-muted-foreground max-w-md mx-auto">
+                    우측 상단의 <strong>&apos;지원사업 추가&apos;</strong> 버튼을 눌러 공모를 직접 추가하거나,
+                    <strong>지원기회(/opportunities)</strong>에서 로봇 R&D 과제를 지원 결정(GO)하여 파이프라인에 연결할 수 있습니다.
+                  </p>
+                </div>
+                <div className="pt-2 flex justify-center gap-3">
+                  <Button size="sm" onClick={() => setShowAddModal(true)} className="gap-1.5 text-xs">
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>지원사업 직접 추가</span>
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              summary.items.map((item) => {
               const statusCfg = STATUS_CONFIG[item.status] || STATUS_CONFIG.CANDIDATE;
               const isAwarded = item.status === "AWARDED";
 
@@ -519,7 +573,7 @@ export function V3FundingPortfolioWorkspace() {
                   </div>
                 </div>
               );
-            })}
+            }))}
           </CardContent>
         </Card>
       )}
@@ -847,8 +901,9 @@ export function V3FundingPortfolioWorkspace() {
                   <input
                     type="number"
                     step="10000000"
+                    placeholder="예: 200000000"
                     value={newAmount}
-                    onChange={(e) => setNewAmount(Number(e.target.value))}
+                    onChange={(e) => setNewAmount(e.target.value === "" ? "" : Number(e.target.value))}
                     className="w-full px-3 py-2 rounded border bg-background text-foreground font-mono"
                   />
                 </div>

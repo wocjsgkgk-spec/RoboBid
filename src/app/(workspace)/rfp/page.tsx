@@ -20,6 +20,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
 import { opportunityStore } from "@/lib/opportunities/opportunity-store";
 import { Opportunity } from "@/types";
 import { ComplianceStatus, RequirementMatrixItem } from "@/types/compliance";
@@ -104,9 +105,17 @@ export default function RFPAnalysisPage() {
 
   useEffect(() => {
     const opps = opportunityStore.getAll();
-    setOpportunities(opps);
-    if (opps.length > 0) {
-      setSelectedOppId(opps[0].id);
+    const decided = opps.filter(
+      (o) =>
+        o.status === "GO" ||
+        o.status === "PROPOSAL_PREP" ||
+        o.status === "PROPOSAL_IN_PROGRESS" ||
+        o.status === "SUBMISSION_READY" ||
+        o.status === "SUBMITTED"
+    );
+    setOpportunities(decided);
+    if (decided.length > 0) {
+      setSelectedOppId(decided[0].id);
     }
   }, []);
 
@@ -148,6 +157,37 @@ export default function RFPAnalysisPage() {
 
   const satisfiedCount = requirements.filter((r) => r.status === "SATISFIED").length;
   const complianceRate = Math.round((satisfiedCount / requirements.length) * 100);
+
+  if (opportunities.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+            <FileText className="h-6 w-6 text-primary" />
+            지원준비 (RFP 요구사항 분석)
+          </h1>
+        </div>
+        <Card className="p-12 text-center space-y-4">
+          <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto">
+            <FileText className="w-6 h-6" />
+          </div>
+          <div className="space-y-1">
+            <h2 className="text-base font-bold text-foreground">현재 지원 결정(GO)된 공모가 없습니다</h2>
+            <p className="text-xs text-muted-foreground max-w-md mx-auto leading-relaxed">
+              [지원기회] 메뉴에서 공모를 검토하고 ‘지원 결정(GO)’을 확정하면, 해당 공모의 제안요청서(RFP) 분석 및 규격 매트릭스 작성이 이곳에 자동으로 등록됩니다.
+            </p>
+          </div>
+          <div className="pt-2">
+            <Link href="/opportunities">
+              <Button size="sm">
+                지원기회 공모 검토하러 가기 <ArrowRight className="w-3.5 h-3.5 ml-1" />
+              </Button>
+            </Link>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

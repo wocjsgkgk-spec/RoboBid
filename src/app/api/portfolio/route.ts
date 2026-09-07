@@ -62,3 +62,18 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export async function DELETE() {
+  try {
+    fundingPortfolioStore.clearAll();
+    return NextResponse.json({
+      success: true,
+      message: "자금 지원 포트폴리오가 모두 초기화되었습니다.",
+    });
+  } catch (error: any) {
+    return NextResponse.json(
+      { success: false, error: error.message || "Failed to clear funding portfolio" },
+      { status: 500 }
+    );
+  }
+}

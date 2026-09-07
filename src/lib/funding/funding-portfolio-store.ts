@@ -23,9 +23,11 @@ export class FundingPortfolioStore {
 
   private constructor() {
     this.restoreFromStorage();
-    if (this.items.size === 0) {
-      this.seedInitialData();
-    }
+  }
+
+  public clearAll(): void {
+    this.items.clear();
+    this.persistToStorage();
   }
 
   public static getInstance(): FundingPortfolioStore {
@@ -67,7 +69,7 @@ export class FundingPortfolioStore {
     }
   }
 
-  private seedInitialData(): void {
+  public seedInitialData(): void {
     const now = new Date().toISOString();
     const amrProjectId = "c001-amr-logistics-robot";
 

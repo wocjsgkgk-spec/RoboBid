@@ -118,9 +118,18 @@ export default function SubmissionsPage() {
 
   useEffect(() => {
     const opps = opportunityStore.getAll();
-    setOpportunities(opps);
-    if (opps.length > 0) {
-      setSelectedOppId(opps[0].id);
+    const decidedOpps = opps.filter((o) =>
+      [
+        "GO",
+        "PROPOSAL_PREP",
+        "PROPOSAL_IN_PROGRESS",
+        "SUBMISSION_READY",
+        "SUBMITTED",
+      ].includes(o.status)
+    );
+    setOpportunities(decidedOpps);
+    if (decidedOpps.length > 0) {
+      setSelectedOppId(decidedOpps[0].id);
     }
   }, []);
 
@@ -185,7 +194,7 @@ export default function SubmissionsPage() {
         )}
       </div>
 
-      {/* When no opportunities exist in pipeline */}
+      {/* When no decided opportunities exist in pipeline */}
       {opportunities.length === 0 ? (
         <Card className="p-12 text-center border-dashed">
           <div className="flex flex-col items-center justify-center gap-3">
@@ -193,17 +202,16 @@ export default function SubmissionsPage() {
               <FileCheck className="h-8 w-8" />
             </div>
             <h3 className="text-base font-bold text-foreground">
-              현재 점검 대상인 입찰·공모가 없습니다 (클린 상태)
+              현재 제출·심사를 진행할 확정 공모가 없습니다
             </h3>
             <p className="text-sm text-muted-foreground max-w-md">
-              공모 탐색(/opportunities)에서 나라장터나 기업마당 공고를 동기화하거나 새 공모를 등록하면,
-              해당 공고의 D-Day 마감 카운트다운과 행정 필수 구비서류 체크리스트가 실시간으로 활성화됩니다.
+              [지원기회 탐색] 메뉴에서 로봇 R&D 과제를 검토하고 <strong>지원 결정(GO)</strong>을 확정하면 이곳에서 사전 심사 체크리스트와 행정 필수 구비서류 점검이 활성화됩니다.
             </p>
             <div className="pt-2">
               <Link href="/opportunities">
                 <Button size="sm" className="gap-2">
                   <ArrowRight className="h-4 w-4" />
-                  <span>공모 탐색 바로가기</span>
+                  <span>공모 탐색 및 지원 결정하기</span>
                 </Button>
               </Link>
             </div>

@@ -54,16 +54,8 @@ export function BidDecisionModal({
   );
 
   const [decision, setDecision] = useState<DecisionType>(isFunding ? "APPLY" : "GO");
-  const [reason, setReason] = useState(
-    isFunding
-      ? "사내 TRL 및 로봇 핵심기술 규격이 공고 목적과 부합하며, 비목별 지원금 충당률이 양호하여 지원 신청을 추진함."
-      : "사내 TRL 7 실증 기술 및 특허 일치도가 높으며 사업 예산 적정함."
-  );
-  const [conditionsText, setConditionsText] = useState(
-    isFunding
-      ? "컨소시엄 참여기업 확약서 확보\n시제품 제작 외주처 견적 확정"
-      : "D-10 이전 기술초안 완료\n컨소시엄 지분율 확정"
-  );
+  const [reason, setReason] = useState("");
+  const [conditionsText, setConditionsText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!visible) return null;
